@@ -81,10 +81,14 @@ function computeCycleScore(avgE, sigma) {
 }
 
 /* ---------- UI building blocks ---------- */
+/* purple elixir bubble now */
 function ElixirDrop({ value }) {
   return (
     <div className="w-[36px] h-[36px] flex items-center justify-center rounded-full" aria-hidden>
-      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white" style={{ background: "linear-gradient(180deg,#69b3ff,#2a8bff)", boxShadow: "0 2px 6px rgba(10,20,40,0.5)" }}>
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shadow-sm border border-white/10"
+        style={{ background: "linear-gradient(180deg,#b466ff,#7c3aed)" }}
+      >
         {value ?? "-"}
       </div>
     </div>
@@ -106,14 +110,14 @@ function RadarChart({ values, size = 160 }) {
 
   const rings = [0.25, 0.5, 0.75, 1];
   return (
-    <div className="relative w-[180px] h-[200px] flex flex-col items-center">
-      {/* cardinal labels */}
-      <div className="absolute top-1 left-1/2 -translate-x-1/2 text-xs text-slate-300">Offense</div>
-      <div className="absolute right-1 top-1/2 -translate-y-1/2 text-xs text-slate-300">Defense</div>
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-300">Synergy</div>
-      <div className="absolute left-1 top-1/2 -translate-y-1/2 text-xs text-slate-300">Cycle</div>
+    <div className="relative w-[200px] h-[220px] flex flex-col items-center">
+      {/* cardinal labels positioned clearly */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-slate-300 pointer-events-none">Offense</div>
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none">Defense</div>
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-300 pointer-events-none">Synergy</div>
+      <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none">Cycle</div>
 
-      <svg width={160} height={160} viewBox={`0 0 160 160`} className="mx-auto mt-3">
+      <svg width={180} height={180} viewBox={`0 0 180 180`} className="mx-auto mt-3">
         <defs>
           <linearGradient id="rf2" x1="0" x2="1">
             <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.95" />
@@ -255,19 +259,17 @@ export default function App() {
 
             <div className="grid grid-cols-4 gap-2 mb-2">
               {deckSlots.slice(0,4).map((c,i)=>(
-                <div key={i} onClick={()=>toggleSlot(i)} className={`relative w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
+                <div key={i} onClick={()=>toggleSlot(i)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      {/* title + elixir inside box (elixir bubble top-right) */}
-                      <div className="flex items-start justify-between pr-2">
+                      {/* title + elixir inside box (elixir bubble top-right inside box) */}
+                      <div className="flex items-start justify-between">
                         <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <div className="absolute -top-3 -right-3">
-                          <ElixirDrop value={c.elixir} />
-                        </div>
+                        <div className="ml-2"><ElixirDrop value={c.elixir} /></div>
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-slate-300">
-                        <div className="text-xs text-slate-400 truncate">{/* removed type line as requested */}</div>
+                        <div className="text-xs text-slate-400 truncate"></div>
                         <button onClick={(e)=>{ e.stopPropagation(); removeAt(i); }} className="text-red-400 text-xs">Remove</button>
                       </div>
                     </>
@@ -280,12 +282,12 @@ export default function App() {
 
             <div className="grid grid-cols-4 gap-2">
               {deckSlots.slice(4,8).map((c,i)=>{ const idx = i+4; return (
-                <div key={idx} onClick={()=>toggleSlot(idx)} className={`relative w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
+                <div key={idx} onClick={()=>toggleSlot(idx)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      <div className="flex items-start justify-between pr-2">
+                      <div className="flex items-start justify-between">
                         <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <div className="absolute -top-3 -right-3"><ElixirDrop value={c.elixir} /></div>
+                        <div className="ml-2"><ElixirDrop value={c.elixir} /></div>
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-slate-300">
@@ -311,7 +313,8 @@ export default function App() {
             <div className="flex flex-col items-center">
               <RadarChart values={{ offense, defense, synergy, cycle }} size={160} />
 
-              <div className="mt-4 text-center">
+              {/* moved DeckScore a bit further down */}
+              <div className="mt-6 text-center">
                 <div className="text-xs text-slate-400">DeckScore</div>
                 <div className="text-4xl font-extrabold text-amber-300 mt-1">{deckScore !== null ? deckScore : "--"}</div>
                 <div className="mt-2 text-xs text-slate-400">Avg Elixir — <span className="font-semibold text-amber-300">{filledDeck.length ? avg.toFixed(2) : "--"}</span></div>
