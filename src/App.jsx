@@ -1,48 +1,44 @@
 // src/App.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, Plus, Trash2, Download, Link2, Check } from "lucide-react";
+import {
+  Search,
+  X,
+  Plus,
+  Trash2,
+  Download,
+  Link2,
+  Check,
+  Share2,
+} from "lucide-react";
 import cards from "./cards.json";
 
-/* ---------- Helpers & Heuristic ---------- */
+/* ---------- Helpers & Heuristic (unchanged) ---------- */
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 
 function calcElixirAvg(deck) {
   return deck.reduce((s, c) => s + (c.elixir || 0), 0) / deck.length;
 }
-
 function calcSigma(deck, avg) {
   return Math.sqrt(
     deck.reduce((s, c) => s + Math.pow((c.elixir || 0) - avg, 2), 0) /
       deck.length
   );
 }
-
 function getSynergy(a, b) {
   if (!a || !b) return 0;
-  if (a.tags?.includes("evolution") || b.tags?.includes("evolution"))
-    return 0.18;
+  if (a.tags?.includes("evolution") || b.tags?.includes("evolution")) return 0.18;
   if (a.type === "hero" || b.type === "hero") return 0.22;
-
   const shared = (a.tags || []).filter((t) => (b.tags || []).includes(t));
   return Math.min(0.35, shared.length * 0.12);
 }
-
 function computeHeuristic(deck) {
   if (!deck || deck.length !== 8) return null;
 
   const avg = calcElixirAvg(deck);
   const sigma = calcSigma(deck, avg);
 
-  const roles = {
-    win: 0,
-    spell: 0,
-    air: 0,
-    swarm: 0,
-    support: 0,
-    building: 0,
-  };
-
+  const roles = { win: 0, spell: 0, air: 0, swarm: 0, support: 0, building: 0 };
   deck.forEach((c) =>
     (c.tags || []).forEach((t) => {
       if (roles[t] !== undefined) roles[t] += 1;
@@ -54,11 +50,9 @@ function computeHeuristic(deck) {
   const spell_ok = Math.min(1, roles.spell / 2);
   const air_ok = Math.min(1, roles.air / 1);
   const swarm_ok = Math.min(1, roles.swarm / 1);
-
   const elixir_ok = clamp(1 - Math.abs(avg - 3.8) / 3.8);
   const balance_ok = 1 - clamp(sigma / 3);
 
-  // synergy
   let synergy = 0,
     pairs = 0;
   for (let i = 0; i < deck.length; i++) {
@@ -67,7 +61,6 @@ function computeHeuristic(deck) {
       pairs++;
     }
   }
-
   const synergy_score = pairs ? clamp((synergy / pairs + 1) / 2) : 0.5;
 
   const score = Math.round(
@@ -95,7 +88,7 @@ function computeHeuristic(deck) {
   };
 }
 
-/* ---------- Badge ---------- */
+/* ---------- small UI helpers ---------- */
 function ElixirBadge({ value }) {
   return (
     <div className="w-10 h-10 rounded-md bg-amber-600/10 border border-amber-500/20 flex flex-col items-center justify-center text-xs text-amber-300 font-semibold">
@@ -104,7 +97,7 @@ function ElixirBadge({ value }) {
   );
 }
 
-/* ---------- MAIN APP ---------- */
+/* ---------- Main component ---------- */
 export default function App() {
   const [deckSlots, setDeckSlots] = useState(Array(8).fill(null));
   const [modalOpen, setModalOpen] = useState(false);
@@ -113,11 +106,12 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [downloadMsg, setDownloadMsg] = useState(null);
 
   const filledCount = deckSlots.filter(Boolean).length;
 
-  /* Load from URL if ?deck= is present */
   useEffect(() => {
+    // load from ?deck=... if present
     const params = new URLSearchParams(window.location.search);
     const code = params.get("deck");
     if (code) {
@@ -131,23 +125,17 @@ export default function App() {
     }
   }, []);
 
-  /* Recalculate rating when deck changes */
   useEffect(() => {
     const filled = deckSlots.filter(Boolean);
-
     if (filled.length === 8) {
       const r = computeHeuristic(filled);
       setResult(r);
-      setModalOpen(false);
-
-      // suggestions
+      // build suggestions
       const base = r.final;
       const sug = [];
-
       for (let i = 0; i < filled.length; i++) {
         for (const candidate of cards) {
           if (filled.find((d) => d.id === candidate.id)) continue;
-
           const test = filled.slice();
           test[i] = candidate;
           const s = computeHeuristic(test);
@@ -162,16 +150,16 @@ export default function App() {
           }
         }
       }
-
       sug.sort((a, b) => b.delta - a.delta);
       setSuggestions(sug.slice(0, 3));
+      setModalOpen(false);
+      setActiveSlot(null);
     } else {
       setResult(null);
       setSuggestions([]);
     }
   }, [deckSlots]);
 
-  /* Filter cards */
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return cards;
@@ -182,10 +170,14 @@ export default function App() {
     );
   }, [query]);
 
-  /* Add card */
+  function openModalForSlot(slot = null) {
+    setActiveSlot(slot);
+    setQuery("");
+    setModalOpen(true);
+  }
+
   function addCardToSlot(card) {
     if (deckSlots.find((d) => d?.id === card.id)) return;
-
     const ns = [...deckSlots];
     if (activeSlot !== null) ns[activeSlot] = card;
     else {
@@ -193,69 +185,99 @@ export default function App() {
       if (idx === -1) return;
       ns[idx] = card;
     }
-
     setDeckSlots(ns);
   }
 
-  /* Remove card */
   function removeAt(i) {
     const ns = [...deckSlots];
     ns[i] = null;
     setDeckSlots(ns);
   }
 
-  /* Clear all */
+  function toggleSlot(i) {
+    // if card present -> remove; else open modal to fill
+    if (deckSlots[i]) {
+      removeAt(i);
+      return;
+    }
+    openModalForSlot(i);
+  }
+
   function clearAll() {
     setDeckSlots(Array(8).fill(null));
     setResult(null);
     setSuggestions([]);
   }
 
-  /* Copy link */
-  function copyShare() {
-    const code = deckSlots.map((c) => (c ? c.id : "")).join(",");
-    const url = `${window.location.origin}?deck=${encodeURIComponent(code)}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
-  /* Download deck */
-  function downloadDeck() {
-    const data = JSON.stringify(deckSlots.map((c) => c?.id || null), null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "deck.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  /* FIX: Apply suggestion */
   function applySuggestion(s) {
+    if (!s || typeof s.slot !== "number") return;
     const ns = [...deckSlots];
     ns[s.slot] = s.to;
     setDeckSlots(ns);
   }
 
-  /* Open modal */
-  function openModalForSlot(slot) {
-    setActiveSlot(slot);
-    setQuery("");
-    setModalOpen(true);
+  function shareLink() {
+    const code = deckSlots.map((c) => (c ? c.id : "")).join(",");
+    const url = `${window.location.origin}${window.location.pathname}?deck=${encodeURIComponent(code)}`;
+
+    if (navigator.share) {
+      navigator
+        .share({
+          title: "DeckScore — my deck",
+          text: "Check my Clash Royale deck rating",
+          url,
+        })
+        .catch(() => {
+          // ignore
+        });
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+      });
+    }
+  }
+
+  // download deck+rating as image using html2canvas loaded dynamically
+  async function downloadDeckImage() {
+    setDownloadMsg("Preparing image...");
+    try {
+      // dynamically add html2canvas if missing
+      if (!window.html2canvas) {
+        await new Promise((res, rej) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+          s.onload = res;
+          s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+      const root = document.getElementById("deck-export-root");
+      if (!root) throw new Error("Export element not found");
+      // temporarily expand to fit content (avoid cropping)
+      const canvas = await window.html2canvas(root, { scale: 2, useCORS: true });
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "deckscore.png";
+      a.click();
+      setDownloadMsg("Downloaded!");
+      setTimeout(() => setDownloadMsg(null), 1500);
+    } catch (err) {
+      console.error("downloadDeckImage error", err);
+      setDownloadMsg("Failed to download image");
+      setTimeout(() => setDownloadMsg(null), 2000);
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 p-4">
       <div className="max-w-xl mx-auto">
-
-        {/* HEADER */}
+        {/* header */}
         <header className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-extrabold tracking-tight">DeckScore</h1>
 
           <div className="flex items-center gap-2">
-            {/* TOP RIGHT BUTTON CHANGED */}
             <button
               onClick={() => openModalForSlot(null)}
               disabled={filledCount === 8}
@@ -269,377 +291,231 @@ export default function App() {
               {filledCount === 8 ? "Deck complete" : "Select 8 cards"}
             </button>
 
-            <button
-              onClick={clearAll}
-              className="bg-slate-700 px-3 py-2 rounded-md"
-            >
+            <button onClick={clearAll} className="bg-slate-700 px-3 py-2 rounded-md">
               <Trash2 size={14} />
             </button>
           </div>
         </header>
 
-        {/* DECK AREA — 2 rows × 4 cards */}
-        <section className="mb-4">
-          <div className="text-xs text-slate-400 mb-2">
-            Your deck ({filledCount}/8)
-          </div>
+        {/* deck export target wrapper (used for screenshot) */}
+        <div id="deck-export-root" className="rounded-lg">
+          {/* deck */}
+          <section className="mb-4">
+            <div className="text-xs text-slate-400 mb-2">Your deck ({filledCount}/8)</div>
 
-          {/* Row 1 */}
-          <div className="grid grid-cols-4 gap-2 mb-2">
-            {deckSlots.slice(0, 4).map((c, i) => (
-              <CardSlot
-                key={i}
-                card={c}
-                index={i}
-                removeAt={removeAt}
-                openModal={openModalForSlot}
-              />
-            ))}
-          </div>
-
-          {/* Row 2 */}
-          <div className="grid grid-cols-4 gap-2">
-            {deckSlots.slice(4, 8).map((c, i) => (
-              <CardSlot
-                key={i + 4}
-                card={c}
-                index={i + 4}
-                removeAt={removeAt}
-                openModal={openModalForSlot}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* SEARCH CTA */}
-        <button
-          onClick={() => openModalForSlot(null)}
-          className="w-full bg-slate-800/40 border border-slate-700 rounded-md px-3 py-2 flex items-center gap-3 mb-4"
-        >
-          <Search size={16} className="text-slate-400" />
-          <span className="text-slate-400">Search cards...</span>
-        </button>
-
-        {/* RATING SECTION */}
-        <section className="bg-slate-800/40 rounded-2xl p-4 shadow-lg mb-8">
-          <RatingSection
-            result={result}
-            copyShare={copyShare}
-            copied={copied}
-            downloadDeck={downloadDeck}
-            suggestions={suggestions}
-            applySuggestion={applySuggestion}
-          />
-        </section>
-
-        {/* SEARCH MODAL */}
-        <SearchModal
-          modalOpen={modalOpen}
-          setModalOpen={setModalOpen}
-          activeSlot={activeSlot}
-          setActiveSlot={setActiveSlot}
-          filtered={filtered}
-          query={query}
-          setQuery={setQuery}
-          deckSlots={deckSlots}
-          addCardToSlot={addCardToSlot}
-          filledCount={filledCount}
-        />
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Card Slot Component ---------- */
-function CardSlot({ card, index, openModal, removeAt }) {
-  return (
-    <div
-      onClick={() => openModal(index)}
-      className={`w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${
-        card
-          ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-400 shadow-md"
-          : "bg-slate-800/40 border border-slate-700"
-      }`}
-    >
-      {card ? (
-        <>
-          <div className="flex items-start justify-between">
-            <div className="font-semibold truncate">{card.name}</div>
-
-            <div className="bg-amber-500 text-slate-900 rounded-full px-2 py-0.5 text-xs font-bold flex items-center gap-1">
-              <Check size={12} />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-slate-300">
-            <div className="text-amber-300 font-semibold">{card.elixir}</div>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                removeAt(index);
-              }}
-              className="text-red-400 text-xs"
-            >
-              Remove
-            </button>
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs">
-          <div className="mb-1">Empty</div>
-          <div className="text-cyan-300 font-semibold">Tap to add</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ---------- Rating Section ---------- */
-function RatingSection({
-  result,
-  copyShare,
-  copied,
-  downloadDeck,
-  suggestions,
-  applySuggestion,
-}) {
-  return (
-    <>
-      <div className="flex items-center gap-4">
-        {/* SCORE CIRCLE */}
-        <div
-          className="w-28 h-28 rounded-full flex items-center justify-center shadow-xl"
-          style={{
-            background: result
-              ? "linear-gradient(135deg,#FFB86B,#FF6B6B)"
-              : "linear-gradient(135deg,#4B5563,#6B7280)",
-          }}
-        >
-          <div className="text-3xl font-extrabold text-slate-900">
-            {result ? result.final : "--"}
-          </div>
-        </div>
-
-        {/* DETAILS */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-slate-400">Deck Rating</div>
-              <div className="text-sm font-semibold text-slate-100">
-                {result ? "Based on synergy & balance" : "Select 8 cards"}
-              </div>
-            </div>
-
-            <div className="text-right">
-              <div className="text-xs text-slate-400">Elixir</div>
-              <div className="text-sm font-semibold text-amber-300">
-                {result ? result.avgElixir : "--"}
-              </div>
-            </div>
-          </div>
-
-          {/* BREAKDOWN BARS */}
-          <div className="mt-3 space-y-2">
-            {result ? (
-              Object.entries(result.breakdown).map(([k, v]) => (
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {deckSlots.slice(0, 4).map((c, i) => (
                 <div
-                  key={k}
-                  className="flex items-center justify-between text-xs text-slate-200"
+                  key={i}
+                  onClick={() => toggleSlot(i)}
+                  className={`w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${
+                    c
+                      ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md"
+                      : "bg-slate-800/40 border border-slate-700"
+                  }`}
                 >
-                  <div className="capitalize">{k}</div>
+                  {c ? (
+                    <>
+                      <div className="flex items-start justify-between">
+                        <div className="font-semibold leading-tight" style={{lineHeight: '1.05'}}>{c.name}</div>
+                        <div className="bg-amber-500 text-slate-900 rounded-full px-2 py-0.5 text-xs font-bold flex items-center gap-1">
+                          <Check size={12} />
+                        </div>
+                      </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="w-32 bg-slate-900 h-2 rounded overflow-hidden">
-                      <div
-                        style={{ width: `${v}%` }}
-                        className={`h-2 ${
-                          k === "elixir" ? "bg-cyan-400" : "bg-amber-400"
-                        }`}
-                      ></div>
+                      <div className="flex items-center justify-between text-xs text-slate-300">
+                        <div className="text-amber-300 font-semibold">{c.elixir}</div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeAt(i); }}
+                          className="text-red-400 text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs">
+                      <div className="mb-1">Empty</div>
+                      <div className="text-cyan-300 font-semibold">Tap to add</div>
                     </div>
-                    <div className="w-8 text-right">{v}%</div>
-                  </div>
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className="text-slate-400 text-sm">
-                Pick 8 cards to show full rating breakdown.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* BUTTONS */}
-      <div className="mt-4 flex gap-2">
-        <button
-          onClick={copyShare}
-          className="flex-1 bg-cyan-500 text-slate-900 px-3 py-2 rounded-md flex items-center justify-center gap-2"
-        >
-          <Link2 size={14} />
-          {copied ? "Copied!" : "Share"}
-        </button>
-
-        <button
-          onClick={downloadDeck}
-          className="flex-1 bg-slate-700 px-3 py-2 rounded-md flex items-center justify-center gap-2"
-        >
-          <Download size={14} />
-          Export
-        </button>
-      </div>
-
-      {/* SUGGESTIONS */}
-      {suggestions.length > 0 && (
-        <div className="mt-4">
-          <div className="text-xs text-slate-400 mb-2">Suggestions</div>
-
-          <div className="space-y-2">
-            {suggestions.map((s, i) => (
-              <div
-                key={i}
-                className="p-2 rounded-md bg-slate-800/40 flex items-center justify-between"
-              >
-                <div className="text-xs">
-                  <div>
-                    <span className="font-semibold">{s.from.name}</span> →{" "}
-                    <span className="font-semibold">{s.to.name}</span>
-                  </div>
-                  <div className="text-slate-400 text-[11px]">
-                    +{s.delta} (→ {s.score})
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => applySuggestion(s)}
-                  className="bg-amber-500 text-slate-900 px-2 py-1 rounded text-xs"
-                >
-                  Apply
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-/* ---------- Search Modal ---------- */
-function SearchModal({
-  modalOpen,
-  setModalOpen,
-  activeSlot,
-  setActiveSlot,
-  filtered,
-  query,
-  setQuery,
-  deckSlots,
-  addCardToSlot,
-  filledCount,
-}) {
-  return (
-    <AnimatePresence>
-      {modalOpen && (
-        <>
-          {/* BACKDROP */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black z-40"
-            onClick={() => {
-              setModalOpen(false);
-              setActiveSlot(null);
-            }}
-          />
-
-          {/* BOTTOM SHEET */}
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="fixed inset-x-0 bottom-0 top-12 bg-slate-900 rounded-t-2xl p-4 z-50 max-w-xl mx-auto shadow-2xl flex flex-col"
-          >
-            {/* HEADER */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-lg font-semibold">Search Cards</div>
-
-              <button
-                onClick={() => {
-                  setModalOpen(false);
-                  setActiveSlot(null);
-                }}
-                className="p-2 rounded-md bg-slate-800"
-              >
-                <X size={16} />
-              </button>
+              ))}
             </div>
 
-            {/* SEARCH INPUT */}
-            <div className="relative mb-3">
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Type card name..."
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-md px-3 py-2"
-              />
-              <Search
-                size={16}
-                className="absolute right-3 top-2.5 text-slate-400"
-              />
-            </div>
-
-            {/* CARD LIST */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              {filtered.map((c) => {
-                const selected = deckSlots.find((d) => d?.id === c.id);
-
+            <div className="grid grid-cols-4 gap-2">
+              {deckSlots.slice(4, 8).map((c, i) => {
+                const idx = i + 4;
                 return (
-                  <motion.button
-                    key={c.id}
-                    whileTap={{ scale: selected ? 1 : 0.97 }}
-                    disabled={selected}
-                    onClick={() => addCardToSlot(c)}
-                    className={`w-full p-3 rounded-md flex items-center gap-3 text-left ${
-                      selected
-                        ? "bg-amber-900/10 border border-amber-400"
-                        : "bg-slate-800/40 hover:bg-slate-800/30"
+                  <div
+                    key={idx}
+                    onClick={() => toggleSlot(idx)}
+                    className={`w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${
+                      c
+                        ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md"
+                        : "bg-slate-800/40 border border-slate-700"
                     }`}
                   >
-                    <ElixirBadge value={c.elixir} />
+                    {c ? (
+                      <>
+                        <div className="flex items-start justify-between">
+                          <div className="font-semibold leading-tight" style={{lineHeight: '1.05'}}>{c.name}</div>
+                          <div className="bg-amber-500 text-slate-900 rounded-full px-2 py-0.5 text-xs font-bold flex items-center gap-1">
+                            <Check size={12} />
+                          </div>
+                        </div>
 
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">{c.name}</div>
-                      <div className="text-xs text-slate-400 truncate">
-                        {c.type} • {(c.tags || []).slice(0, 3).join(", ")}
+                        <div className="flex items-center justify-between text-xs text-slate-300">
+                          <div className="text-amber-300 font-semibold">{c.elixir}</div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeAt(idx); }}
+                            className="text-red-400 text-xs"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs">
+                        <div className="mb-1">Empty</div>
+                        <div className="text-cyan-300 font-semibold">Tap to add</div>
                       </div>
-                    </div>
-
-                    <div className="ml-auto text-xs">
-                      {selected ? (
-                        <span className="text-amber-300 flex items-center gap-1">
-                          <Check size={14} /> Selected
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">Tap to add</span>
-                      )}
-                    </div>
-                  </motion.button>
+                    )}
+                  </div>
                 );
               })}
             </div>
+          </section>
 
-            <div className="text-xs text-slate-500 mt-2 text-center">
-              {filledCount}/8 selected
+          {/* small CTA */}
+          <div className="mb-4">
+            <button onClick={() => openModalForSlot(null)} className="w-full bg-slate-800/40 border border-slate-700 rounded-md px-3 py-2 flex items-center gap-3">
+              <Search size={16} className="text-slate-400" />
+              <span className="text-slate-400">Search cards...</span>
+            </button>
+          </div>
+
+          {/* rating + share area (inside export root) */}
+          <section className="bg-slate-800/40 rounded-2xl p-4 shadow-lg mb-8">
+            <div className="flex items-start gap-4">
+              <div className="w-28 h-28 rounded-full flex items-center justify-center shadow-2xl" style={{ background: result ? "linear-gradient(135deg,#FFB86B,#FF6B6B)" : "linear-gradient(135deg,#4B5563,#6B7280)" }}>
+                <div className="text-3xl font-extrabold text-slate-900">{result ? result.final : "--"}</div>
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-slate-400">Deck Rating</div>
+                    <div className="text-sm font-semibold text-slate-100">{result ? "Based on synergy & balance" : "Select 8 cards"}</div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-xs text-slate-400">Elixir</div>
+                    <div className="text-sm font-semibold text-amber-300">{result ? result.avgElixir : "--"}</div>
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {result ? Object.entries(result.breakdown).map(([k, v]) => (
+                    <div key={k} className="flex items-center justify-between text-xs text-slate-200">
+                      <div className="capitalize">{k}</div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-36 bg-slate-900 h-2 rounded overflow-hidden">
+                          <div style={{ width: `${v}%` }} className={`h-2 ${k === "elixir" ? "bg-cyan-400" : "bg-amber-400"}`}></div>
+                        </div>
+                        <div className="w-8 text-right">{v}%</div>
+                      </div>
+                    </div>
+                  )) : <div className="text-slate-400 text-sm">Pick 8 cards to show full rating breakdown.</div>}
+                </div>
+              </div>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+
+            {/* Share + Download (image) */}
+            <div className="mt-4 flex gap-2">
+              <button onClick={shareLink} className="flex-1 bg-cyan-500 text-slate-900 px-3 py-2 rounded-md flex items-center justify-center gap-2">
+                <Share2 size={14} /> Share
+              </button>
+              <button onClick={downloadDeckImage} className="flex-1 bg-slate-700 px-3 py-2 rounded-md flex items-center justify-center gap-2">
+                <Download size={14} /> Download Image
+              </button>
+            </div>
+
+            {/* small status messages */}
+            <div className="mt-3 text-xs text-slate-400">
+              {copied && <span>Link copied to clipboard</span>}
+              {downloadMsg && <span>{downloadMsg}</span>}
+            </div>
+
+            {/* suggestions */}
+            {suggestions.length > 0 && (
+              <div className="mt-4">
+                <div className="text-xs text-slate-400 mb-2">Suggestions</div>
+                <div className="space-y-2">
+                  {suggestions.map((s, i) => (
+                    <div key={i} className="p-2 rounded-md bg-slate-800/40 flex items-center justify-between">
+                      <div className="text-xs">
+                        <div><span className="font-semibold">{s.from.name}</span> → <span className="font-semibold">{s.to.name}</span></div>
+                        <div className="text-slate-400 text-[11px]">+{s.delta} (→ {s.score})</div>
+                      </div>
+                      <button onClick={() => applySuggestion(s)} className="bg-amber-500 text-slate-900 px-2 py-1 rounded text-xs">Apply</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* Floating Search Modal */}
+      <AnimatePresence>
+        {modalOpen && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }} transition={{ duration: 0.14 }} className="fixed inset-0 bg-black z-40" onClick={() => { setModalOpen(false); setActiveSlot(null); }} />
+
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 320, damping: 30 }} className="fixed inset-x-0 bottom-0 top-12 z-50">
+              <div className="max-w-xl mx-auto h-full bg-slate-900 rounded-t-2xl shadow-xl p-4 overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-1.5 bg-slate-700 rounded" />
+                    <div className="text-lg font-semibold">Search Cards</div>
+                    <div className="text-xs text-slate-400 ml-2">{filledCount}/8 selected</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setModalOpen(false); setActiveSlot(null); }} className="p-2 rounded-md bg-slate-800"><X size={16} /></button>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <div className="relative">
+                    <input value={query} onChange={(e) => setQuery(e.target.value)} autoFocus placeholder="Type card name or id..." className="w-full bg-slate-800/60 border border-slate-700 rounded-md px-3 py-2 placeholder-slate-400" />
+                    <div className="absolute right-3 top-2.5 text-slate-400"><Search size={16} /></div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pr-2 space-y-2">
+                  {filtered.map((c) => {
+                    const selected = deckSlots.find((d) => d?.id === c.id);
+                    return (
+                      <motion.button key={c.id} whileTap={{ scale: selected ? 1 : 0.97 }} disabled={selected} onClick={() => addCardToSlot(c)} className={`w-full p-3 rounded-md flex items-center gap-3 text-left ${selected ? "bg-amber-900/10 border border-amber-400" : "bg-slate-800/40 hover:bg-slate-800/30"}`}>
+                        <ElixirBadge value={c.elixir} />
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{c.name}</div>
+                          <div className="text-xs text-slate-400 truncate">{c.type} • {(c.tags || []).slice(0,3).join(", ")}</div>
+                        </div>
+                        <div className="ml-auto text-xs text-slate-300">{selected ? <span className="text-amber-300 flex items-center gap-1"><Check size={14} /> Selected</span> : "Tap to add"}</div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 text-xs text-slate-400 text-center">Pick cards until your deck has 8 cards. Tap a slot to target where the next card will go.</div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
