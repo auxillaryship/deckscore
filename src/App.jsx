@@ -81,7 +81,7 @@ function computeCycleScore(avgE, sigma) {
 }
 
 /* ---------- UI building blocks ---------- */
-/* purple elixir bubble now */
+/* purple elixir bubble inside card */
 function ElixirDrop({ value }) {
   return (
     <div className="w-[36px] h-[36px] flex items-center justify-center rounded-full" aria-hidden>
@@ -111,7 +111,7 @@ function RadarChart({ values, size = 160 }) {
   const rings = [0.25, 0.5, 0.75, 1];
   return (
     <div className="relative w-[200px] h-[220px] flex flex-col items-center">
-      {/* cardinal labels positioned clearly */}
+      {/* cardinal labels */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-slate-300 pointer-events-none">Offense</div>
       <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none">Defense</div>
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-300 pointer-events-none">Synergy</div>
@@ -398,23 +398,6 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-/* small exported helpers re-used */
-function StatBar({ label, value, accent="amber" }) {
-  const w = `${clamp(value/100,0,1)*100}%`;
-  const cls = accent === "cyan" ? "bg-cyan-400" : "bg-amber-400";
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs text-slate-300">
-        <div className="capitalize">{label}</div>
-        <div className="text-xs font-semibold">{value}/100</div>
-      </div>
-      <div className="w-full bg-slate-900 h-2 rounded overflow-hidden mt-1">
-        <div className={`${cls} h-2`} style={{ width: w }} />
-      </div>
     </div>
   );
 }
