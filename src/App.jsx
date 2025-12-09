@@ -1,12 +1,10 @@
 // src/App.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, Plus, Trash2, Download, Link2, Share2 } from "lucide-react";
+import { Search, X, Plus, Trash2, Share2 } from "lucide-react";
 import cards from "./cards.json";
 
-/* -------------------------
-   Helper math/utilities
-   ------------------------- */
+/* ---------- helpers ---------- */
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 
 function avgElixir(deck) {
@@ -18,150 +16,91 @@ function sigmaElixir(deck, avg) {
   return Math.sqrt(deck.reduce((s, c) => s + Math.pow((c.elixir || 0) - avg, 2), 0) / deck.length);
 }
 
-/* -------------------------
-   Heuristic / scoring
-   ------------------------- */
-
-/*
- - Synergy: similar to previous computeHeuristic synergy piece
-*/
+/* ---------- scoring ---------- */
 function computeSynergy(deck) {
   if (!deck.length) return 0;
-  let synergy = 0,
-    pairs = 0;
+  let synergy = 0, pairs = 0;
   for (let i = 0; i < deck.length; i++) {
     for (let j = i + 1; j < deck.length; j++) {
       const a = deck[i], b = deck[j];
       if (!a || !b) continue;
-      const shared = (a.tags || []).filter((t) => (b.tags || []).includes(t));
       if ((a.tags || []).includes("evolution") || (b.tags || []).includes("evolution")) synergy += 0.18;
-      else synergy += Math.min(0.35, shared.length * 0.12);
+      const shared = (a.tags || []).filter(t => (b.tags || []).includes(t));
+      synergy += Math.min(0.35, shared.length * 0.12);
       pairs++;
     }
   }
-  const raw = pairs ? synergy / pairs : 0.5;
+  const raw = pairs ? synergy / pairs : 0;
   return Math.round(clamp(raw, 0, 1) * 100);
 }
 
-/*
- Detect typical "win condition" cards via tags or name heuristics.
- This is intentionally permissive: we check known keywords and tags.
-*/
 function detectWinCondition(deck) {
   if (!deck || !deck.length) return null;
-  const winKeywords = [
-    "hog", "royal giant", "balloon", "golem", "miner", "pekka", "bowler", "battle ram", "ram", "lava", "lava hound",
-    "giant", "giant skeleton", "skeleton king", "archer queen", "golden knight", "mighty miner", "monk"
-  ];
+  const winKeywords = ["hog", "royal giant", "balloon", "golem", "miner", "pekka", "lava", "giant", "miner", "ram", "battle ram", "bowler", "archer queen", "golden knight", "mighty miner", "monk"];
   for (const c of deck) {
-    const name = (c.name || "").toLowerCase();
     if ((c.tags || []).includes("win")) return c;
+    const name = (c.name || "").toLowerCase();
     for (const kw of winKeywords) if (name.includes(kw)) return c;
   }
   return null;
 }
 
-/*
- Compute offense and defense contributions using simple card rules.
- Each card gives small numeric contributions to offense/defense.
- We'll normalize to 0-100.
-*/
 function computeOffenseDefense(deck) {
   let off = 0, def = 0;
-
   for (const c of deck) {
     if (!c) continue;
     const name = (c.name || "").toLowerCase();
     const tags = c.tags || [];
     const e = c.elixir || 0;
 
-    // base contributions from elixir (more elixir -> often more raw offense capacity)
-    off += clamp(e / 6, 0, 1) * 0.6; // normalized
-    def += clamp((4 - Math.abs(e - 3.5)) / 4, 0, 1) * 0.2; // mid elixir gives stability for defense
+    off += clamp(e / 6, 0, 1) * 0.6;
+    def += clamp((4 - Math.abs(e - 3.5)) / 4, 0, 1) * 0.2;
 
-    // type-based tweaks
-    if (c.type === "spell") {
-      off += 0.45; // spells help finish damage
-      def += 0.35; // spells also answer swarms
-    }
+    if (c.type === "spell") { off += 0.45; def += 0.35; }
     if (c.type === "troop") {
       if (tags.includes("tank") || tags.includes("heavy")) { off += 0.65; def += 0.4; }
       if (tags.includes("support")) { off += 0.45; def += 0.15; }
-      if (tags.includes("control") || tags.includes("stun") || tags.includes("slow")) { def += 0.7; }
+      if (tags.includes("control") || tags.includes("stun")) def += 0.7;
       if (tags.includes("swarm")) { def += 0.5; off += 0.1; }
-      if (tags.includes("air")) { def += 0.5; }
+      if (tags.includes("air")) def += 0.5;
     }
-    if (c.type === "building") {
-      def += 0.9;
-      off += 0.05;
-    }
+    if (c.type === "building") { def += 0.9; off += 0.05; }
 
-    // name-based heuristics
-    if (name.includes("rocket") || name.includes("fireball") || name.includes("poison") || name.includes("lightning")) {
-      off += 0.6;
-      def += 0.2;
-    }
-    if (name.includes("tombstone") || name.includes("cannon") || name.includes("bomb") || name.includes("inferno") || name.includes("furnace")) {
-      def += 0.9;
-    }
-    if (name.includes("zap") || name.includes("snowball") || name.includes("log")) {
-      def += 0.45;
-    }
-    if (name.includes("fisherman") || name.includes("hunter") || name.includes("executioner") || name.includes("wizard") || name.includes("electro")) {
-      def += 0.6;
-      off += 0.25;
-    }
-
-    // small synergy incentive
-    if (tags.includes("synergy") || tags.includes("spawn") || tags.includes("split")) {
-      off += 0.15; def += 0.15;
-    }
+    if (name.includes("rocket") || name.includes("fireball") || name.includes("poison") || name.includes("lightning")) { off += 0.6; def += 0.2; }
+    if (name.includes("tombstone") || name.includes("cannon") || name.includes("bomb") || name.includes("inferno") || name.includes("furnace")) def += 0.9;
+    if (name.includes("zap") || name.includes("snowball") || name.includes("log")) def += 0.45;
+    if (name.includes("fisherman") || name.includes("hunter") || name.includes("executioner") || name.includes("wizard") || name.includes("electro")) { def += 0.6; off += 0.25; }
+    if (tags.includes("spawn") || tags.includes("split")) { off += 0.15; def += 0.15; }
   }
 
-  // normalize to 0..1
   const rawOff = clamp(off / (deck.length * 1.5), 0, 1);
   const rawDef = clamp(def / (deck.length * 1.5), 0, 1);
-
-  return {
-    offense: Math.round(rawOff * 100),
-    defense: Math.round(rawDef * 100),
-  };
+  return { offense: Math.round(rawOff * 100), defense: Math.round(rawDef * 100) };
 }
 
-/*
- Cycle score: derive from average elixir and variance.
- - Fast cycle (low avg elixir + low variance) => high cycle score
- - Slow / heavy => low cycle score
-*/
 function computeCycleScore(avgE, sigma) {
   if (!avgE) return 0;
-  // ideal fast cycle ~2.6 => high score, average meta ~3.5 => mid, heavy 4.5+ => low
-  const score = clamp((4.5 - avgE) / 2.0, 0, 1); // maps avgE 2.5->1, 4.5->0
-  // penalize high variance (unstable elixir)
+  const score = clamp((4.5 - avgE) / 2.0, 0, 1);
   const stability = clamp(1 - sigma / 2.5, 0, 1);
   return Math.round(score * stability * 100);
 }
 
-/* -------------------------
-   Small UI building blocks
-   ------------------------- */
+/* ---------- UI pieces ---------- */
 function ElixirBadge({ value }) {
   return (
-    <div className="w-10 h-10 rounded-md bg-amber-600/10 border border-amber-500/20 flex flex-col items-center justify-center text-xs text-amber-300 font-semibold">
-      <div>{value ?? "-"}</div>
+    <div className="w-10 h-10 rounded-md bg-amber-600/10 border border-amber-500/20 flex items-center justify-center text-xs text-amber-300 font-semibold">
+      {value ?? "-"}
     </div>
   );
 }
 
-/* RadarChart component (SVG) */
-function RadarChart({ values /* object with offense, defense, synergy, cycle (0-100) */, size = 220 }) {
-  // axes order clockwise
+/* Radar chart (no overlay labels, small legend below) */
+function RadarChart({ values, size = 160 }) {
   const axes = ["Offense", "Defense", "Synergy", "Cycle"];
   const vals = [values.offense, values.defense, values.synergy, values.cycle];
   const cx = size / 2, cy = size / 2, r = size * 0.36;
-  const angle = (i) => (Math.PI / 2) - (i * (2 * Math.PI / axes.length)); // start at top
+  const angle = i => (Math.PI / 2) - (i * (2 * Math.PI / axes.length));
 
-  // polygon points for the values
   const points = vals.map((v, i) => {
     const rad = (v / 100) * r;
     const x = cx + Math.cos(angle(i)) * rad;
@@ -169,75 +108,65 @@ function RadarChart({ values /* object with offense, defense, synergy, cycle (0-
     return `${x},${y}`;
   }).join(" ");
 
-  // axis lines
-  const axisLines = axes.map((a, i) => {
-    const x = cx + Math.cos(angle(i)) * r;
-    const y = cy - Math.sin(angle(i)) * r;
-    return { x, y, label: a, i };
-  });
-
-  // concentric rings (25/50/75/100)
   const rings = [0.25, 0.5, 0.75, 1];
-
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
-      <defs>
-        <linearGradient id="radarFill" x1="0" x2="1">
-          <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#FF6B6B" stopOpacity="0.95" />
-        </linearGradient>
-        <linearGradient id="radarStroke" x1="0" x2="1">
-          <stop offset="0%" stopColor="#FFC37A" />
-          <stop offset="100%" stopColor="#FF7B7B" />
-        </linearGradient>
-      </defs>
+    <div className="flex flex-col items-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <defs>
+          <linearGradient id="radarFill2" x1="0" x2="1">
+            <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#FF6B6B" stopOpacity="0.95" />
+          </linearGradient>
+        </defs>
 
-      {/* rings */}
-      {rings.map((f, idx) => (
-        <circle key={idx} cx={cx} cy={cy} r={r * f} fill="none" stroke="#263241" strokeWidth="1" />
-      ))}
+        {rings.map((f, idx) => <circle key={idx} cx={cx} cy={cy} r={r * f} fill="none" stroke="#263241" strokeWidth="1" />)}
+        {Array.from({length: axes.length}).map((_, i) => {
+          const x = cx + Math.cos(angle(i)) * r;
+          const y = cy - Math.sin(angle(i)) * r;
+          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#263241" strokeWidth="1" />;
+        })}
+        <polygon points={points} fill="url(#radarFill2)" fillOpacity="0.95" stroke="#FF9A55" strokeWidth="2" />
+        {vals.map((v,i)=> {
+          const rad = (v/100)*r; const x = cx + Math.cos(angle(i))*rad; const y = cy - Math.sin(angle(i))*rad;
+          return <circle key={i} cx={x} cy={y} r={3} fill="#FF9A55" />;
+        })}
+      </svg>
 
-      {/* axis lines */}
-      {axisLines.map((a, idx) => (
-        <line key={idx} x1={cx} y1={cy} x2={a.x} y2={a.y} stroke="#263241" strokeWidth="1" />
-      ))}
-
-      {/* polygon shadow */}
-      <polygon points={points} fill="url(#radarFill)" fillOpacity="0.95" stroke="url(#radarStroke)" strokeWidth="2" />
-
-      {/* labels */}
-      {axisLines.map((a, idx) => {
-        const lx = a.x + Math.cos(angle(a.i)) * 14;
-        const ly = a.y - Math.sin(angle(a.i)) * 14;
-        const anchor = Math.abs(Math.cos(angle(a.i))) > 0.1 ? (Math.cos(angle(a.i)) > 0 ? "start" : "end") : "middle";
-        return (
-          <text key={idx} x={lx} y={ly} fill="#94A3B8" fontSize="11" textAnchor={anchor} dominantBaseline="central">{a.label}</text>
-        );
-      })}
-
-      {/* value dots (optional small circles) */}
-      {vals.map((v, i) => {
-        const rad = (v / 100) * r;
-        const x = cx + Math.cos(angle(i)) * rad;
-        const y = cy - Math.sin(angle(i)) * rad;
-        return <circle key={i} cx={x} cy={y} r={3} fill="#FF9A55" />;
-      })}
-
-    </svg>
+      {/* legend under chart */}
+      <div className="mt-2 flex gap-3 text-xs text-slate-400">
+        <div><span className="text-amber-300 font-semibold">Off</span></div>
+        <div><span className="text-amber-300 font-semibold">Def</span></div>
+        <div><span className="text-amber-300 font-semibold">Syn</span></div>
+        <div><span className="text-amber-300 font-semibold">Cycle</span></div>
+      </div>
+    </div>
   );
 }
 
-/* -------------------------
-   Main App component
-   ------------------------- */
+/* small bar component */
+function StatBar({ label, value, color = "amber" }) {
+  const w = `${clamp(value/100,0,1)*100}%`;
+  const barColor = color === "cyan" ? "bg-cyan-400" : "bg-amber-400";
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs text-slate-300">
+        <div className="capitalize">{label}</div>
+        <div className="text-xs font-semibold">{value}/100</div>
+      </div>
+      <div className="w-full bg-slate-900 h-2 rounded overflow-hidden mt-1">
+        <div className={`${barColor} h-2`} style={{ width: w }} />
+      </div>
+    </div>
+  );
+}
+
+/* ---------- MAIN APP ---------- */
 export default function App() {
   const [deckSlots, setDeckSlots] = useState(Array(8).fill(null));
   const [modalOpen, setModalOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState(null);
   const [query, setQuery] = useState("");
   const [copied, setCopied] = useState(false);
-  const [downloadMsg, setDownloadMsg] = useState(null);
-
   const filledCount = deckSlots.filter(Boolean).length;
 
   useEffect(() => {
@@ -246,12 +175,11 @@ export default function App() {
     if (code) {
       const ids = code.split(",");
       const loaded = Array(8).fill(null);
-      ids.slice(0,8).forEach((id,i) => { const f = cards.find(c=>c.id===id); if (f) loaded[i]=f; });
+      ids.slice(0,8).forEach((id,i)=> { const f = cards.find(c=>c.id===id); if (f) loaded[i]=f; });
       setDeckSlots(loaded);
     }
   }, []);
 
-  // recompute derived stats
   const filledDeck = useMemo(() => deckSlots.filter(Boolean), [deckSlots]);
   const avg = useMemo(() => avgElixir(filledDeck), [filledDeck]);
   const sigma = useMemo(() => sigmaElixir(filledDeck, avg), [filledDeck, avg]);
@@ -260,142 +188,55 @@ export default function App() {
   const { offense, defense } = useMemo(() => computeOffenseDefense(filledDeck), [filledDeck]);
   const cycle = useMemo(() => computeCycleScore(avg, sigma), [avg, sigma]);
 
-  // DeckScore (combine multiple signals)
   const deckScore = useMemo(() => {
     if (filledDeck.length !== 8) return null;
-    // weight: offense 25, defense 25, synergy 20, cycle 15, win presence 15
     const winBonus = winCard ? 1 : 0;
-    const score = Math.round(
-      0.25 * offense + 0.25 * defense + 0.20 * synergy + 0.15 * cycle + 0.15 * (winBonus ? 100 : 40)
-    );
+    const score = Math.round(0.25 * offense + 0.25 * defense + 0.20 * synergy + 0.15 * cycle + 0.15 * (winBonus ? 100 : 40));
     return clamp(score, 0, 100);
   }, [offense, defense, synergy, cycle, winCard, filledDeck]);
 
-  // filtered search
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return cards;
     return cards.filter(c => (c.name||"").toLowerCase().includes(q) || (c.id||"").toLowerCase().includes(q));
   }, [query]);
 
-  /* UI actions */
-  function openModalForSlot(slot = null) {
-    setActiveSlot(slot);
-    setQuery("");
-    setModalOpen(true);
-  }
+  function openModalForSlot(slot = null) { setActiveSlot(slot); setQuery(""); setModalOpen(true); }
+  function addCardToSlot(card) { if (deckSlots.find(d=>d && d.id===card.id)) return; const ns=[...deckSlots]; if (activeSlot!==null) ns[activeSlot]=card; else { const idx = ns.findIndex(x=>x===null); if (idx===-1) return; ns[idx]=card; } setDeckSlots(ns); }
+  function removeAt(i) { const ns=[...deckSlots]; ns[i]=null; setDeckSlots(ns); }
+  function toggleSlot(i) { if (deckSlots[i]) removeAt(i); else openModalForSlot(i); }
+  function clearAll(){ setDeckSlots(Array(8).fill(null)); setQuery(""); setModalOpen(false); }
+  function shareLink(){ const code = deckSlots.map(c => c ? c.id : "").join(","); const url = `${window.location.origin}${window.location.pathname}?deck=${encodeURIComponent(code)}`; if (navigator.share) { navigator.share({ title: "DeckScore — my deck", text: "Check my Clash Royale deck", url }).catch(()=>{}); } else { navigator.clipboard.writeText(url).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),1400); }); } }
 
-  function addCardToSlot(card) {
-    if (deckSlots.find(d => d && d.id === card.id)) return;
-    const ns = [...deckSlots];
-    if (activeSlot !== null) ns[activeSlot] = card;
-    else {
-      const idx = ns.findIndex(s => s === null);
-      if (idx === -1) return;
-      ns[idx] = card;
-    }
-    setDeckSlots(ns);
-  }
-
-  function removeAt(i) {
-    const ns = [...deckSlots];
-    ns[i] = null;
-    setDeckSlots(ns);
-  }
-
-  function toggleSlot(i) {
-    if (deckSlots[i]) removeAt(i);
-    else openModalForSlot(i);
-  }
-
-  function clearAll() {
-    setDeckSlots(Array(8).fill(null));
-    setQuery("");
-    setModalOpen(false);
-  }
-
-  function applySuggestion(s) {
-    if (!s || typeof s.slot !== "number") return;
-    const ns = [...deckSlots];
-    ns[s.slot] = s.to;
-    setDeckSlots(ns);
-  }
-
-  function shareLink() {
-    const code = deckSlots.map(c => c ? c.id : "").join(",");
-    const url = `${window.location.origin}${window.location.pathname}?deck=${encodeURIComponent(code)}`;
-    if (navigator.share) {
-      navigator.share({ title: "DeckScore — my deck", text: "Check my Clash Royale deck", url }).catch(()=>{});
-    } else {
-      navigator.clipboard.writeText(url).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),1500); });
-    }
-  }
-
-  // export image (close modal first to avoid overlay capture)
-  async function downloadDeckImage() {
-    setDownloadMsg("Preparing image...");
-    try {
-      if (modalOpen) {
-        setModalOpen(false);
-        setActiveSlot(null);
-        await new Promise(r => setTimeout(r, 280));
-      }
-
-      if (!window.html2canvas) {
-        await new Promise((res, rej) => {
-          const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-          s.onload = res;
-          s.onerror = rej;
-          document.head.appendChild(s);
-        });
-      }
-
-      const root = document.getElementById("deck-export-root");
-      if (!root) throw new Error("Export element missing");
-      const canvas = await window.html2canvas(root, { scale: 2, useCORS: true });
-      const url = canvas.toDataURL("image/png");
-      const a = document.createElement("a"); a.href = url; a.download = "deckscore.png"; a.click();
-      setDownloadMsg("Downloaded!");
-      setTimeout(()=>setDownloadMsg(null), 1500);
-    } catch (err) {
-      console.error(err);
-      setDownloadMsg("Export failed");
-      setTimeout(()=>setDownloadMsg(null), 2000);
-    }
-  }
-
-  /* Search disabled state for selected cards */
-  const isSelected = (c) => deckSlots.find(s => s && s.id === c.id);
+  const isSelected = c => deckSlots.find(s=>s && s.id === c.id);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 p-4">
       <div className="max-w-xl mx-auto">
-        {/* HEADER */}
+        {/* header */}
         <header className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight">DeckScore</h1>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => openModalForSlot(null)} disabled={filledCount === 8} className={`px-3 py-2 rounded-md flex items-center gap-2 ${filledCount===8 ? "bg-slate-700 text-slate-400" : "bg-cyan-500 text-slate-900"}`}>
-              <Plus size={14} /> {filledCount === 8 ? "Deck complete" : "Select 8 cards"}
+            <button onClick={()=>openModalForSlot(null)} disabled={filledCount===8} className={`px-3 py-2 rounded-md flex items-center gap-2 ${filledCount===8 ? "bg-slate-700 text-slate-400" : "bg-cyan-500 text-slate-900"}`}>
+              <Plus size={14} /> {filledCount===8 ? "Deck complete" : "Select 8 cards"}
             </button>
             <button onClick={clearAll} className="bg-slate-700 px-3 py-2 rounded-md"><Trash2 size={14}/></button>
           </div>
         </header>
 
         <div id="deck-export-root" className="rounded-lg">
-          {/* DECK 2x4 */}
+          {/* deck 2x4 */}
           <section className="mb-4">
             <div className="text-xs text-slate-400 mb-2">Your deck ({filledCount}/8)</div>
-
             <div className="grid grid-cols-4 gap-2 mb-2">
               {deckSlots.slice(0,4).map((c,i)=>(
                 <div key={i} onClick={()=>toggleSlot(i)} className={`w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (<>
                     <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                    <div className="flex items-center justify-between text-xs text-slate-300"><div className="text-amber-300 font-semibold">{c.elixir}</div><button onClick={(e)=>{e.stopPropagation(); removeAt(i);}} className="text-red-400 text-xs">Remove</button></div>
+                    <div className="flex items-center justify-between text-xs text-slate-300"><div className="text-amber-300 font-semibold">{c.elixir}</div><button onClick={(e)=>{ e.stopPropagation(); removeAt(i); }} className="text-red-400 text-xs">Remove</button></div>
                   </>) : (<div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs"><div className="mb-1">Empty</div><div className="text-cyan-300 font-semibold">Tap to add</div></div>)}
                 </div>
               ))}
@@ -406,7 +247,7 @@ export default function App() {
                 <div key={idx} onClick={()=>toggleSlot(idx)} className={`w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (<>
                     <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                    <div className="flex items-center justify-between text-xs text-slate-300"><div className="text-amber-300 font-semibold">{c.elixir}</div><button onClick={(e)=>{e.stopPropagation(); removeAt(idx);}} className="text-red-400 text-xs">Remove</button></div>
+                    <div className="flex items-center justify-between text-xs text-slate-300"><div className="text-amber-300 font-semibold">{c.elixir}</div><button onClick={(e)=>{ e.stopPropagation(); removeAt(idx); }} className="text-red-400 text-xs">Remove</button></div>
                   </>) : (<div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs"><div className="mb-1">Empty</div><div className="text-cyan-300 font-semibold">Tap to add</div></div>)}
                 </div>
               )})}
@@ -415,16 +256,19 @@ export default function App() {
 
           {/* CTA */}
           <div className="mb-4">
-            <button onClick={()=>openModalForSlot(null)} className="w-full bg-slate-800/40 border border-slate-700 rounded-md px-3 py-2 flex items-center gap-3"><Search size={16} className="text-slate-400"/> <span className="text-slate-400">Search cards...</span></button>
+            <button onClick={()=>openModalForSlot(null)} className="w-full bg-slate-800/40 border border-slate-700 rounded-md px-3 py-2 flex items-center gap-3">
+              <Search size={16} className="text-slate-400" /> <span className="text-slate-400">Search cards...</span>
+            </button>
           </div>
 
-          {/* RATING + RADAR */}
+          {/* Radar + details */}
           <section className="bg-slate-800/40 rounded-2xl p-4 shadow-lg mb-8">
             <div className="flex flex-col md:flex-row items-start gap-4">
-              <div className="w-full md:w-40 flex-shrink-0">
-                <div className="w-40 h-40 mx-auto">
+              <div className="w-full md:w-40 flex-shrink-0 flex flex-col items-center">
+                <div className="w-40 h-40">
                   <RadarChart values={{ offense, defense, synergy, cycle }} size={160} />
                 </div>
+                <div className="mt-2 text-center text-xs text-slate-400">Radar: Offense • Defense • Synergy • Cycle</div>
               </div>
 
               <div className="flex-1">
@@ -440,42 +284,46 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* 4 boxes reworked */}
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div className="p-2 bg-slate-900/30 rounded">
-                    <div className="text-xs text-slate-300">Win condition</div>
+                  <div className="p-3 bg-slate-900/30 rounded">
+                    <div className="text-xs text-slate-400">Win condition</div>
                     <div className="mt-1 font-medium">{winCard ? winCard.name : "None detected"}</div>
                   </div>
 
-                  <div className="p-2 bg-slate-900/30 rounded">
-                    <div className="text-xs text-slate-300">Cycle</div>
+                  <div className="p-3 bg-slate-900/30 rounded">
+                    <div className="text-xs text-slate-400">Avg Elixir</div>
+                    <div className="mt-1 font-medium">{filledDeck.length ? avg.toFixed(2) : "--"}</div>
+                  </div>
+
+                  <div className="p-3 bg-slate-900/30 rounded">
+                    <div className="text-xs text-slate-400">Cycle</div>
                     <div className="mt-1 font-medium">{filledDeck.length ? (cycle >= 66 ? "Fast" : cycle >= 40 ? "Normal" : "Slow") : "--"}</div>
                   </div>
 
-                  <div className="p-2 bg-slate-900/30 rounded">
-                    <div className="text-xs text-slate-300">Offense</div>
-                    <div className="mt-1 font-medium">{offense}/100</div>
-                  </div>
-
-                  <div className="p-2 bg-slate-900/30 rounded">
-                    <div className="text-xs text-slate-300">Defense</div>
-                    <div className="mt-1 font-medium">{defense}/100</div>
+                  <div className="p-3 bg-slate-900/30 rounded">
+                    <div className="text-xs text-slate-400">Synergy</div>
+                    <div className="mt-1 font-medium">{synergy}%</div>
                   </div>
                 </div>
 
+                {/* Offense / Defense bars */}
+                <div className="mt-4 space-y-3">
+                  <StatBar label="Offense" value={offense} color="amber" />
+                  <StatBar label="Defense" value={defense} color="cyan" />
+                </div>
+
                 <div className="mt-4 flex gap-2">
-                  <button onClick={shareLink} className="flex-1 bg-cyan-500 text-slate-900 px-3 py-2 rounded-md flex items-center justify-center gap-2"><Share2 size={14}/>Share</button>
-                  <button onClick={downloadDeckImage} className="flex-1 bg-slate-700 px-3 py-2 rounded-md flex items-center justify-center gap-2"><Download size={14}/>Download</button>
+                  <button onClick={shareLink} className="flex-1 bg-cyan-500 text-slate-900 px-3 py-2 rounded-md flex items-center justify-center gap-2"><Share2 size={14}/> Share</button>
                 </div>
 
                 <div className="mt-2 text-xs text-slate-400">
                   {copied && <span>Link copied to clipboard</span>}
-                  {downloadMsg && <span>{downloadMsg}</span>}
                 </div>
               </div>
             </div>
 
-            {/* suggestions */}
-            {/* kept from previous logic if any */}
+            {/* optional suggestions could be shown here */}
           </section>
         </div>
       </div>
@@ -500,7 +348,7 @@ export default function App() {
 
                 <div className="mb-3">
                   <div className="relative">
-                    <input value={query} onChange={(e) => setQuery(e.target.value)} autoFocus placeholder="Type card name or id..." className="w-full bg-slate-800/60 border border-slate-700 rounded-md px-3 py-2 placeholder-slate-400" />
+                    <input value={query} onChange={(e)=>setQuery(e.target.value)} autoFocus placeholder="Type card name or id..." className="w-full bg-slate-800/60 border border-slate-700 rounded-md px-3 py-2 placeholder-slate-400" />
                     <div className="absolute right-3 top-2.5 text-slate-400"><Search size={16} /></div>
                   </div>
                 </div>
@@ -513,7 +361,7 @@ export default function App() {
                         <ElixirBadge value={c.elixir} />
                         <div className="min-w-0">
                           <div className="font-medium truncate">{c.name}</div>
-                          <div className="text-xs text-slate-400 truncate">{c.type} • {(c.tags||[]).slice(0,3).join(", ")}</div>
+                          <div className="text-xs text-slate-400 truncate">{c.type} • {(c.tags || []).slice(0,3).join(", ")}</div>
                         </div>
                         <div className="ml-auto text-xs text-slate-300">{selected ? <span className="text-amber-300">Selected</span> : "Tap to add"}</div>
                       </motion.button>
