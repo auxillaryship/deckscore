@@ -82,17 +82,16 @@ function computeCycleScore(avgE, sigma) {
 
 /* ---------- UI building blocks ---------- */
 function ElixirDrop({ value }) {
-  // stylized elixir circle with gradient
   return (
-    <div style={{ width: 34, height: 34 }} className="flex items-center justify-center rounded-full" aria-hidden>
-      <div style={{ background: "linear-gradient(180deg,#69b3ff,#2a8bff)" }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shadow-sm border border-white/10">
+    <div className="w-[36px] h-[36px] flex items-center justify-center rounded-full" aria-hidden>
+      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white" style={{ background: "linear-gradient(180deg,#69b3ff,#2a8bff)", boxShadow: "0 2px 6px rgba(10,20,40,0.5)" }}>
         {value ?? "-"}
       </div>
     </div>
   );
 }
 
-/* RadarChart (SVG) */
+/* Radar Chart with cardinal labels (Offense top, Defense right, Synergy bottom, Cycle left) */
 function RadarChart({ values, size = 160 }) {
   const axes = ["Offense", "Defense", "Synergy", "Cycle"];
   const vals = [values.offense, values.defense, values.synergy, values.cycle];
@@ -107,10 +106,16 @@ function RadarChart({ values, size = 160 }) {
 
   const rings = [0.25, 0.5, 0.75, 1];
   return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
+    <div className="relative w-[180px] h-[200px] flex flex-col items-center">
+      {/* cardinal labels */}
+      <div className="absolute top-1 left-1/2 -translate-x-1/2 text-xs text-slate-300">Offense</div>
+      <div className="absolute right-1 top-1/2 -translate-y-1/2 text-xs text-slate-300">Defense</div>
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-300">Synergy</div>
+      <div className="absolute left-1 top-1/2 -translate-y-1/2 text-xs text-slate-300">Cycle</div>
+
+      <svg width={160} height={160} viewBox={`0 0 160 160`} className="mx-auto mt-3">
         <defs>
-          <linearGradient id="rf" x1="0" x2="1">
+          <linearGradient id="rf2" x1="0" x2="1">
             <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.95" />
             <stop offset="100%" stopColor="#FF6B6B" stopOpacity="0.95" />
           </linearGradient>
@@ -123,25 +128,17 @@ function RadarChart({ values, size = 160 }) {
           return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#263241" strokeWidth="1" />;
         })}
 
-        <polygon points={points} fill="url(#rf)" fillOpacity="0.95" stroke="#FF9A55" strokeWidth="2" />
+        <polygon points={points} fill="url(#rf2)" fillOpacity="0.95" stroke="#FF9A55" strokeWidth="2" />
         {vals.map((v,i) => {
           const rad = (v/100)*r; const x = cx + Math.cos(angle(i))*rad; const y = cy - Math.sin(angle(i))*rad;
           return <circle key={i} cx={x} cy={y} r={3} fill="#FF9A55" />;
         })}
       </svg>
-
-      {/* legend, centered and spaced so it doesn't overlap */}
-      <div className="mt-3 flex gap-4 text-xs text-slate-400 justify-center w-full">
-        <div className="text-center"><div className="text-slate-300 text-[11px]">Offense</div></div>
-        <div className="text-center"><div className="text-slate-300 text-[11px]">Defense</div></div>
-        <div className="text-center"><div className="text-slate-300 text-[11px]">Synergy</div></div>
-        <div className="text-center"><div className="text-slate-300 text-[11px]">Cycle</div></div>
-      </div>
     </div>
   );
 }
 
-/* small stat bar with numeric */
+/* stat bar */
 function StatBar({ label, value, accent="amber" }) {
   const w = `${clamp(value/100,0,1)*100}%`;
   const cls = accent === "cyan" ? "bg-cyan-400" : "bg-amber-400";
@@ -200,7 +197,6 @@ export default function App() {
     return cards.filter(c => (c.name||"").toLowerCase().includes(q) || (c.id||"").toLowerCase().includes(q));
   }, [query]);
 
-  /* actions */
   function openModalForSlot(slot = null) {
     setActiveSlot(slot);
     setQuery("");
@@ -218,7 +214,7 @@ export default function App() {
     }
     setDeckSlots(ns);
 
-    // if that made the deck complete (8), close modal immediately
+    // auto-close when deck complete
     const newCount = ns.filter(Boolean).length;
     if (newCount === 8) {
       setModalOpen(false);
@@ -244,7 +240,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-slate-100 p-4">
       <div className="max-w-xl mx-auto">
-        {/* header */}
         <header className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-extrabold tracking-tight">DeckScore</h1>
           <div className="flex items-center gap-2">
@@ -253,7 +248,6 @@ export default function App() {
           </div>
         </header>
 
-        {/* export root */}
         <div id="deck-export-root" className="rounded-lg">
           {/* deck 2x4 */}
           <section className="mb-4">
@@ -261,15 +255,19 @@ export default function App() {
 
             <div className="grid grid-cols-4 gap-2 mb-2">
               {deckSlots.slice(0,4).map((c,i)=>(
-                <div key={i} onClick={()=>toggleSlot(i)} className={`w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
+                <div key={i} onClick={()=>toggleSlot(i)} className={`relative w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      <div className="flex items-center justify-between">
+                      {/* title + elixir inside box (elixir bubble top-right) */}
+                      <div className="flex items-start justify-between pr-2">
                         <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <ElixirDrop value={c.elixir} />
+                        <div className="absolute -top-3 -right-3">
+                          <ElixirDrop value={c.elixir} />
+                        </div>
                       </div>
+
                       <div className="flex items-center justify-between text-xs text-slate-300">
-                        <div className="text-xs text-slate-400">Type: {c.type}</div>
+                        <div className="text-xs text-slate-400 truncate">{/* removed type line as requested */}</div>
                         <button onClick={(e)=>{ e.stopPropagation(); removeAt(i); }} className="text-red-400 text-xs">Remove</button>
                       </div>
                     </>
@@ -282,15 +280,16 @@ export default function App() {
 
             <div className="grid grid-cols-4 gap-2">
               {deckSlots.slice(4,8).map((c,i)=>{ const idx = i+4; return (
-                <div key={idx} onClick={()=>toggleSlot(idx)} className={`w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
+                <div key={idx} onClick={()=>toggleSlot(idx)} className={`relative w-full h-28 rounded-lg p-2 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between pr-2">
                         <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <ElixirDrop value={c.elixir} />
+                        <div className="absolute -top-3 -right-3"><ElixirDrop value={c.elixir} /></div>
                       </div>
+
                       <div className="flex items-center justify-between text-xs text-slate-300">
-                        <div className="text-xs text-slate-400">Type: {c.type}</div>
+                        <div className="text-xs text-slate-400 truncate"></div>
                         <button onClick={(e)=>{ e.stopPropagation(); removeAt(idx); }} className="text-red-400 text-xs">Remove</button>
                       </div>
                     </>
@@ -302,7 +301,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* search CTA */}
+          {/* CTA */}
           <div className="mb-4">
             <button onClick={()=>openModalForSlot(null)} className="w-full bg-slate-800/40 border border-slate-700 rounded-md px-3 py-2 flex items-center gap-3"><Search size={16} className="text-slate-400"/> <span className="text-slate-400">Search cards...</span></button>
           </div>
@@ -310,11 +309,8 @@ export default function App() {
           {/* radar + centered details */}
           <section className="bg-slate-800/40 rounded-2xl p-4 shadow-lg mb-8">
             <div className="flex flex-col items-center">
-              <div className="w-40 h-40">
-                <RadarChart values={{ offense, defense, synergy, cycle }} size={160} />
-              </div>
+              <RadarChart values={{ offense, defense, synergy, cycle }} size={160} />
 
-              {/* centered DeckScore & Avg Elixir */}
               <div className="mt-4 text-center">
                 <div className="text-xs text-slate-400">DeckScore</div>
                 <div className="text-4xl font-extrabold text-amber-300 mt-1">{deckScore !== null ? deckScore : "--"}</div>
@@ -337,13 +333,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* offense/defense bars (full width under boxes) */}
+              {/* offense/defense bars */}
               <div className="mt-4 w-full space-y-3">
                 <StatBar label="Offense" value={offense} />
                 <StatBar label="Defense" value={defense} accent="cyan" />
               </div>
 
-              {/* share only */}
               <div className="mt-4 w-full">
                 <button onClick={shareLink} className="w-full bg-cyan-500 text-slate-900 px-3 py-2 rounded-md flex items-center justify-center gap-2"><Share2 size={14}/> Share</button>
               </div>
@@ -400,6 +395,23 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/* small exported helpers re-used */
+function StatBar({ label, value, accent="amber" }) {
+  const w = `${clamp(value/100,0,1)*100}%`;
+  const cls = accent === "cyan" ? "bg-cyan-400" : "bg-amber-400";
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs text-slate-300">
+        <div className="capitalize">{label}</div>
+        <div className="text-xs font-semibold">{value}/100</div>
+      </div>
+      <div className="w-full bg-slate-900 h-2 rounded overflow-hidden mt-1">
+        <div className={`${cls} h-2`} style={{ width: w }} />
+      </div>
     </div>
   );
 }
