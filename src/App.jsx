@@ -81,13 +81,13 @@ function computeCycleScore(avgE, sigma) {
 }
 
 /* ---------- UI building blocks ---------- */
-/* purple elixir bubble inside card */
+/* ElixirDrop — magenta, smaller, with inner shadow */
 function ElixirDrop({ value }) {
   return (
-    <div className="w-[36px] h-[36px] flex items-center justify-center rounded-full" aria-hidden>
+    <div className="w-[32px] h-[32px] flex items-center justify-center rounded-full" aria-hidden>
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shadow-sm border border-white/10"
-        style={{ background: "linear-gradient(180deg,#b466ff,#7c3aed)" }}
+        className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shadow-[inset_0_3px_6px_rgba(0,0,0,0.25)] border border-white/10"
+        style={{ background: "linear-gradient(180deg,#ff6ad1,#c43be0)" }}
       >
         {value ?? "-"}
       </div>
@@ -95,7 +95,7 @@ function ElixirDrop({ value }) {
   );
 }
 
-/* Radar Chart with cardinal labels (Offense top, Defense right, Synergy bottom, Cycle left) */
+/* RadarChart — labels precisely placed at top/right/bottom/left */
 function RadarChart({ values, size = 160 }) {
   const axes = ["Offense", "Defense", "Synergy", "Cycle"];
   const vals = [values.offense, values.defense, values.synergy, values.cycle];
@@ -109,13 +109,13 @@ function RadarChart({ values, size = 160 }) {
   }).join(" ");
 
   const rings = [0.25, 0.5, 0.75, 1];
+
   return (
     <div className="relative w-[200px] h-[220px] flex flex-col items-center">
-      {/* cardinal labels */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-slate-300 pointer-events-none">Offense</div>
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none">Defense</div>
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-300 pointer-events-none">Synergy</div>
-      <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none">Cycle</div>
+      <div style={{ left: "50%", transform: "translateX(-50%)" }} className="absolute top-2 text-xs text-slate-300 pointer-events-none">Offense</div>
+      <div style={{ top: "50%", transform: "translateY(-50%)" }} className="absolute right-2 text-xs text-slate-300 pointer-events-none">Defense</div>
+      <div style={{ left: "50%", transform: "translateX(-50%)" }} className="absolute bottom-6 text-xs text-slate-300 pointer-events-none">Synergy</div>
+      <div style={{ top: "50%", transform: "translateY(-50%)" }} className="absolute left-2 text-xs text-slate-300 pointer-events-none">Cycle</div>
 
       <svg width={180} height={180} viewBox={`0 0 180 180`} className="mx-auto mt-3">
         <defs>
@@ -262,10 +262,9 @@ export default function App() {
                 <div key={i} onClick={()=>toggleSlot(i)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      {/* title + elixir inside box (elixir bubble top-right inside box) */}
-                      <div className="flex items-start justify-between">
-                        <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <div className="ml-2"><ElixirDrop value={c.elixir} /></div>
+                      <div className="flex items-start justify-between w-full">
+                        <div className="font-semibold leading-tight truncate" style={{lineHeight:'1.05'}}>{c.name}</div>
+                        <div className="absolute top-3 right-3"><ElixirDrop value={c.elixir} /></div>
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-slate-300">
@@ -285,9 +284,9 @@ export default function App() {
                 <div key={idx} onClick={()=>toggleSlot(idx)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      <div className="flex items-start justify-between">
-                        <div className="font-semibold leading-tight" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <div className="ml-2"><ElixirDrop value={c.elixir} /></div>
+                      <div className="flex items-start justify-between w-full">
+                        <div className="font-semibold leading-tight truncate" style={{lineHeight:'1.05'}}>{c.name}</div>
+                        <div className="absolute top-3 right-3"><ElixirDrop value={c.elixir} /></div>
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-slate-300">
@@ -313,14 +312,12 @@ export default function App() {
             <div className="flex flex-col items-center">
               <RadarChart values={{ offense, defense, synergy, cycle }} size={160} />
 
-              {/* moved DeckScore a bit further down */}
               <div className="mt-6 text-center">
                 <div className="text-xs text-slate-400">DeckScore</div>
                 <div className="text-4xl font-extrabold text-amber-300 mt-1">{deckScore !== null ? deckScore : "--"}</div>
                 <div className="mt-2 text-xs text-slate-400">Avg Elixir — <span className="font-semibold text-amber-300">{filledDeck.length ? avg.toFixed(2) : "--"}</span></div>
               </div>
 
-              {/* 3 boxes centered */}
               <div className="mt-4 w-full grid grid-cols-3 gap-2">
                 <div className="p-3 bg-slate-900/30 rounded text-center">
                   <div className="text-xs text-slate-400">Win Condition</div>
@@ -336,7 +333,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* offense/defense bars */}
               <div className="mt-4 w-full space-y-3">
                 <StatBar label="Offense" value={offense} />
                 <StatBar label="Defense" value={defense} accent="cyan" />
