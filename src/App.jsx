@@ -81,17 +81,15 @@ function computeCycleScore(avgE, sigma) {
 }
 
 /* ---------- UI building blocks ---------- */
-/* ElixirDrop — magenta, smaller, with inner shadow */
+/* ElixirDrop — magenta small inline, placed under name */
 function ElixirDrop({ value }) {
   return (
-    <div className="inline-flex items-center gap-2">
-      <div
-        className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shadow-[inset_0_3px_6px_rgba(0,0,0,0.25)] border border-white/10"
-        style={{ background: "linear-gradient(180deg,#ff6ad1,#c43be0)" }}
-        aria-hidden
-      >
-        {value ?? "-"}
-      </div>
+    <div
+      className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[12px] font-semibold text-white"
+      style={{ background: "linear-gradient(180deg,#ff6ad1,#c43be0)", boxShadow: "inset 0 3px 6px rgba(0,0,0,0.22)" }}
+      aria-hidden
+    >
+      {value ?? "-"}
     </div>
   );
 }
@@ -113,11 +111,11 @@ function RadarChart({ values, size = 160 }) {
 
   return (
     <div className="relative w-[200px] h-[240px] flex flex-col items-center">
-      {/* precise cardinal labels (centered using transform) */}
-      <div style={{ left: "50%", transform: "translateX(-50%)" }} className="absolute top-2 text-xs text-slate-300 pointer-events-none">Offense</div>
-      <div style={{ top: "50%", transform: "translateY(-50%)" }} className="absolute right-2 text-xs text-slate-300 pointer-events-none">Defense</div>
-      <div style={{ left: "50%", transform: "translateX(-50%)" }} className="absolute bottom-6 text-xs text-slate-300 pointer-events-none">Synergy</div>
-      <div style={{ top: "50%", transform: "translateY(-50%)" }} className="absolute left-2 text-xs text-slate-300 pointer-events-none">Cycle</div>
+      {/* top label (centered above), right label (centered vertically to right), bottom (centered below), left (centered vertically left) */}
+      <div className="absolute left-1/2 -translate-x-1/2 top-2 text-xs text-slate-300 pointer-events-none">Offense</div>
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none">Defense</div>
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 text-xs text-slate-300 pointer-events-none">Synergy</div>
+      <div className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-300 pointer-events-none">Cycle</div>
 
       <svg width={180} height={180} viewBox={`0 0 180 180`} className="mx-auto mt-3">
         <defs>
@@ -261,22 +259,35 @@ export default function App() {
 
             <div className="grid grid-cols-4 gap-2 mb-2">
               {deckSlots.slice(0,4).map((c,i)=>(
-                <div key={i} onClick={()=>toggleSlot(i)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
+                <div
+                  key={i}
+                  onClick={()=>toggleSlot(i)}
+                  className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}
+                >
                   {c ? (
                     <>
                       <div className="w-full">
                         <div className="font-semibold leading-tight truncate" style={{lineHeight:'1.05'}}>{c.name}</div>
+
+                        {/* elixir + slot number under name (inline) */}
                         <div className="mt-2 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <ElixirDrop value={c.elixir} />
                             <div className="text-xs text-slate-300">#{i+1}</div>
                           </div>
-                          <button onClick={(e)=>{ e.stopPropagation(); removeAt(i); }} className="text-red-400 text-xs">Remove</button>
                         </div>
+                      </div>
+
+                      {/* remove button at bottom right */}
+                      <div className="flex justify-end">
+                        <button onClick={(e)=>{ e.stopPropagation(); removeAt(i); }} className="text-red-400 text-xs mt-2">Remove</button>
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs"><div className="mb-1">Empty</div><div className="text-cyan-300 font-semibold">Tap to add</div></div>
+                    <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs">
+                      <div className="mb-1">Empty</div>
+                      <div className="text-cyan-300 font-semibold">Tap to add</div>
+                    </div>
                   )}
                 </div>
               ))}
@@ -284,22 +295,35 @@ export default function App() {
 
             <div className="grid grid-cols-4 gap-2">
               {deckSlots.slice(4,8).map((c,i)=>{ const idx = i+4; return (
-                <div key={idx} onClick={()=>toggleSlot(idx)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
+                <div
+                  key={idx}
+                  onClick={()=>toggleSlot(idx)}
+                  className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md" : "bg-slate-800/40 border border-slate-700"}`}
+                >
                   {c ? (
                     <>
                       <div className="w-full">
                         <div className="font-semibold leading-tight truncate" style={{lineHeight:'1.05'}}>{c.name}</div>
+
+                        {/* elixir + slot number under name (inline) */}
                         <div className="mt-2 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <ElixirDrop value={c.elixir} />
                             <div className="text-xs text-slate-300">#{idx+1}</div>
                           </div>
-                          <button onClick={(e)=>{ e.stopPropagation(); removeAt(idx); }} className="text-red-400 text-xs">Remove</button>
                         </div>
+                      </div>
+
+                      {/* remove button at bottom right */}
+                      <div className="flex justify-end">
+                        <button onClick={(e)=>{ e.stopPropagation(); removeAt(idx); }} className="text-red-400 text-xs mt-2">Remove</button>
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs"><div className="mb-1">Empty</div><div className="text-cyan-300 font-semibold">Tap to add</div></div>
+                    <div className="flex flex-col items-center justify-center h-full text-center text-slate-400 text-xs">
+                      <div className="mb-1">Empty</div>
+                      <div className="text-cyan-300 font-semibold">Tap to add</div>
+                    </div>
                   )}
                 </div>
               )})}
