@@ -84,10 +84,11 @@ function computeCycleScore(avgE, sigma) {
 /* ElixirDrop — magenta, smaller, with inner shadow */
 function ElixirDrop({ value }) {
   return (
-    <div className="w-[32px] h-[32px] flex items-center justify-center rounded-full" aria-hidden>
+    <div className="inline-flex items-center gap-2">
       <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shadow-[inset_0_3px_6px_rgba(0,0,0,0.25)] border border-white/10"
+        className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold text-white shadow-[inset_0_3px_6px_rgba(0,0,0,0.25)] border border-white/10"
         style={{ background: "linear-gradient(180deg,#ff6ad1,#c43be0)" }}
+        aria-hidden
       >
         {value ?? "-"}
       </div>
@@ -111,7 +112,8 @@ function RadarChart({ values, size = 160 }) {
   const rings = [0.25, 0.5, 0.75, 1];
 
   return (
-    <div className="relative w-[200px] h-[220px] flex flex-col items-center">
+    <div className="relative w-[200px] h-[240px] flex flex-col items-center">
+      {/* precise cardinal labels (centered using transform) */}
       <div style={{ left: "50%", transform: "translateX(-50%)" }} className="absolute top-2 text-xs text-slate-300 pointer-events-none">Offense</div>
       <div style={{ top: "50%", transform: "translateY(-50%)" }} className="absolute right-2 text-xs text-slate-300 pointer-events-none">Defense</div>
       <div style={{ left: "50%", transform: "translateX(-50%)" }} className="absolute bottom-6 text-xs text-slate-300 pointer-events-none">Synergy</div>
@@ -262,14 +264,15 @@ export default function App() {
                 <div key={i} onClick={()=>toggleSlot(i)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      <div className="flex items-start justify-between w-full">
+                      <div className="w-full">
                         <div className="font-semibold leading-tight truncate" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <div className="absolute top-3 right-3"><ElixirDrop value={c.elixir} /></div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-slate-300">
-                        <div className="text-xs text-slate-400 truncate"></div>
-                        <button onClick={(e)=>{ e.stopPropagation(); removeAt(i); }} className="text-red-400 text-xs">Remove</button>
+                        <div className="mt-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ElixirDrop value={c.elixir} />
+                            <div className="text-xs text-slate-300">#{i+1}</div>
+                          </div>
+                          <button onClick={(e)=>{ e.stopPropagation(); removeAt(i); }} className="text-red-400 text-xs">Remove</button>
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -284,14 +287,15 @@ export default function App() {
                 <div key={idx} onClick={()=>toggleSlot(idx)} className={`relative w-full h-28 rounded-lg p-3 flex flex-col justify-between text-sm cursor-pointer ${c ? "bg-gradient-to-br from-amber-900/10 to-amber-700/10 border border-amber-300 shadow-md overflow-visible" : "bg-slate-800/40 border border-slate-700"}`}>
                   {c ? (
                     <>
-                      <div className="flex items-start justify-between w-full">
+                      <div className="w-full">
                         <div className="font-semibold leading-tight truncate" style={{lineHeight:'1.05'}}>{c.name}</div>
-                        <div className="absolute top-3 right-3"><ElixirDrop value={c.elixir} /></div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-slate-300">
-                        <div className="text-xs text-slate-400 truncate"></div>
-                        <button onClick={(e)=>{ e.stopPropagation(); removeAt(idx); }} className="text-red-400 text-xs">Remove</button>
+                        <div className="mt-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ElixirDrop value={c.elixir} />
+                            <div className="text-xs text-slate-300">#{idx+1}</div>
+                          </div>
+                          <button onClick={(e)=>{ e.stopPropagation(); removeAt(idx); }} className="text-red-400 text-xs">Remove</button>
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -312,7 +316,7 @@ export default function App() {
             <div className="flex flex-col items-center">
               <RadarChart values={{ offense, defense, synergy, cycle }} size={160} />
 
-              <div className="mt-6 text-center">
+              <div className="mt-8 text-center">
                 <div className="text-xs text-slate-400">DeckScore</div>
                 <div className="text-4xl font-extrabold text-amber-300 mt-1">{deckScore !== null ? deckScore : "--"}</div>
                 <div className="mt-2 text-xs text-slate-400">Avg Elixir — <span className="font-semibold text-amber-300">{filledDeck.length ? avg.toFixed(2) : "--"}</span></div>
