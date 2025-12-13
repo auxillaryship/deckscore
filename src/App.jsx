@@ -128,7 +128,7 @@ function RadarChart({ values }) {
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
         <text x={cx} y={20} textAnchor="middle" dominantBaseline="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Offense</text>
-        <text x={200} y={cy} dominantBaseline="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Defense</text>
+        <text x={205} y={cy} dominantBaseline="middle" className="fill-amber-200 text-[11px] font-semibold" pointerEvents="none" textAnchor="start">Defense</text>
         <text x={cx} y={200} textAnchor="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Synergy</text>
         <text x={10} y={cy} textAnchor="start" dominantBaseline="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Cycle</text>
       </svg>
@@ -276,10 +276,10 @@ export default function App() {
                   <>
                     <div className="space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-xs leading-tight text-white flex-1">{c.name}</h3>
+                        <h3 className="font-bold text-[10px] leading-tight text-white flex-1 line-clamp-2">{c.name}</h3>
                         <ElixirDrop value={c.elixir} />
                       </div>
-                      <div className="text-xs text-slate-300">{c.type}</div>
+                      <div className="text-[10px] text-slate-300">{c.type}</div>
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="self-start mt-1 px-2 py-0.5 bg-red-500/80 hover:bg-red-600 text-white text-xs font-semibold rounded transition-colors">
                       Remove
