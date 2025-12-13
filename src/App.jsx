@@ -1,23 +1,12 @@
 function RadarChart({ values, size = 160 }) {
+  const axes = ["Offense", "Defense", "Synergy", "Cycle"];
+  const vals = [values.offense, values.defense, values.synergy, values.cycle];
+
   const cx = size / 2;
   const cy = size / 2;
   const r = size * 0.36;
 
-  const axes = [
-    { label: "Offense", x: "50%", y: "0%" },
-    { label: "Defense", x: "100%", y: "50%" },
-    { label: "Synergy", x: "50%", y: "100%" },
-    { label: "Cycle", x: "0%", y: "50%" },
-  ];
-
-  const vals = [
-    values.offense,
-    values.defense,
-    values.synergy,
-    values.cycle,
-  ];
-
-  const angle = i => Math.PI / 2 - i * (2 * Math.PI / 4);
+  const angle = i => Math.PI / 2 - i * (2 * Math.PI / axes.length);
 
   const points = vals
     .map((v, i) => {
@@ -30,19 +19,25 @@ function RadarChart({ values, size = 160 }) {
 
   return (
     <div className="relative w-[220px] h-[220px] mx-auto">
-      {axes.map((a, i) => (
-        <div
-          key={i}
-          className="absolute text-xs text-slate-300"
-          style={{
-            left: a.x,
-            top: a.y,
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          {a.label}
-        </div>
-      ))}
+      {/* TOP */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 text-xs text-slate-300">
+        Offense
+      </div>
+
+      {/* RIGHT */}
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-slate-300">
+        Defense
+      </div>
+
+      {/* BOTTOM */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs text-slate-300">
+        Synergy
+      </div>
+
+      {/* LEFT */}
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 text-xs text-slate-300">
+        Cycle
+      </div>
 
       <svg
         width={size}
