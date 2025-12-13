@@ -269,26 +269,26 @@ export default function App() {
 
         <section className="mb-6">
           <div className="text-sm text-slate-400 mb-3 font-semibold">Your Deck ({filledCount}/8)</div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             {deckSlots.map((c, i) => (
-              <motion.div key={i} onClick={() => toggleSlot(i)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={`relative rounded-xl p-4 flex flex-col justify-between min-h-40 cursor-pointer transition-all ${c ? "bg-gradient-to-br from-amber-600/20 to-amber-900/20 border-2 border-amber-400 shadow-lg hover:shadow-xl hover:border-amber-300" : "bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600"}`}>
+              <motion.div key={i} onClick={() => toggleSlot(i)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={`relative rounded-xl p-3 flex flex-col justify-between min-h-28 cursor-pointer transition-all ${c ? "bg-gradient-to-br from-amber-600/20 to-amber-900/20 border-2 border-amber-400 shadow-lg hover:shadow-xl hover:border-amber-300" : "bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600"}`}>
                 {c ? (
                   <>
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-sm leading-tight text-white flex-1">{c.name}</h3>
+                        <h3 className="font-bold text-xs leading-tight text-white flex-1">{c.name}</h3>
                         <ElixirDrop value={c.elixir} />
                       </div>
                       <div className="text-xs text-slate-300">{c.type}</div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="self-start mt-2 px-2 py-1 bg-red-500/80 hover:bg-red-600 text-white text-xs font-semibold rounded transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="self-start mt-1 px-2 py-0.5 bg-red-500/80 hover:bg-red-600 text-white text-xs font-semibold rounded transition-colors">
                       Remove
                     </button>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center gap-2">
-                    <div className="text-slate-400 text-xs">Empty Slot</div>
-                    <div className="text-cyan-400 font-bold text-sm">Tap to Add</div>
+                  <div className="flex flex-col items-center justify-center h-full text-center gap-1">
+                    <div className="text-slate-400 text-xs">Empty</div>
+                    <div className="text-cyan-400 font-bold text-xs">Add</div>
                   </div>
                 )}
               </motion.div>
@@ -321,7 +321,7 @@ export default function App() {
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-slate-900/50 rounded-lg p-3 text-center border border-slate-700">
               <div className="text-xs text-slate-400 font-semibold mb-1">Win Condition</div>
-              <div className="text-sm font-bold text-cyan-300 truncate">{winCard ? winCard.name : "None"}</div>
+              <div className="text-sm font-bold text-cyan-300 line-clamp-2 break-words">{winCard ? winCard.name : "None"}</div>
             </div>
             <div className="bg-slate-900/50 rounded-lg p-3 text-center border border-slate-700">
               <div className="text-xs text-slate-400 font-semibold mb-1">Cycle Speed</div>
