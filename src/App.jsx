@@ -124,7 +124,7 @@ function RadarChart({ values }) {
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
         <text x={cx} y={35} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Offense</text>
- <text x={245} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
+<text x={265} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
         <text x={cx} y={285} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Synergy</text>
         <text x={10} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Cycle</text>
       </svg>
@@ -413,6 +413,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
