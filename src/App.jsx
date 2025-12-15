@@ -82,7 +82,7 @@ function computeCycleScore(avgE, sigma) {
 
 function ElixirDrop({ value }) {
   return (
-    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white border border-white/20" style={{ background: "linear-gradient(135deg, #ff6ad1, #c43be0)" }}>
+    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "linear-gradient(135deg, #ff6ad1, #c43be0)" }}>
       {value ?? "-"}
     </div>
   );
@@ -267,24 +267,21 @@ export default function App() {
           <div className="text-sm text-slate-400 mb-3 font-semibold">Your Deck ({filledCount}/8)</div>
           <div className="grid grid-cols-4 gap-3">
             {deckSlots.map((c, i) => (
-              <div key={i} onClick={() => toggleSlot(i)} className={`relative rounded-lg p-3 flex flex-col justify-between min-h-32 cursor-pointer transition-all ${c ? "bg-gradient-to-br from-amber-600/25 to-amber-900/25 border-2 border-amber-400 shadow-md" : "bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600"}`}>
+              <div key={i} onClick={() => toggleSlot(i)} className={`relative rounded-xl overflow-hidden cursor-pointer transition-all flex flex-col items-center justify-center min-h-40 ${c ? "bg-gradient-to-br from-amber-600/30 to-amber-900/30 border-2 border-amber-400 shadow-lg" : "bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600"}`}>
                 {c ? (
                   <>
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-sm leading-tight text-white flex-1">{c.name}</h3>
-                        <ElixirDrop value={c.elixir} />
-                      </div>
-                      <div className="text-xs text-slate-300">{c.type}</div>
+                    <div className="flex flex-col items-center justify-center gap-2 w-full flex-1">
+                      <ElixirDrop value={c.elixir} />
+                      <h3 className="font-bold text-xs text-center text-white px-2 leading-tight line-clamp-2">{c.name}</h3>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="self-start mt-1 px-2 py-1 bg-red-500/90 hover:bg-red-600 text-white text-xs font-semibold rounded transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="w-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 transition-colors">
                       Remove
                     </button>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center gap-1">
-                    <div className="text-slate-400 text-xs">Empty</div>
-                    <div className="text-cyan-400 font-bold text-sm">+</div>
+                  <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+                    <div className="text-slate-400 text-sm">Empty</div>
+                    <div className="text-cyan-400 font-bold text-2xl">+</div>
                   </div>
                 )}
               </div>
