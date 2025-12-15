@@ -91,7 +91,7 @@ function ElixirDrop({ value }) {
 function RadarChart({ values }) {
   const axes = ["Offense", "Defense", "Synergy", "Cycle"];
   const vals = [values.offense, values.defense, values.synergy, values.cycle];
-  const cx = 160, cy = 150, r = 60;
+  const cx = 175, cy = 150, r = 60;
   const angle = (i) => Math.PI / 2 - (i * (2 * Math.PI)) / axes.length;
   const points = vals.map((v, i) => {
     const rad = (v / 100) * r;
@@ -103,7 +103,7 @@ function RadarChart({ values }) {
 
   return (
     <div className="flex flex-col items-center gap-6 px-4">
-      <svg width="100%" height={300} viewBox="0 0 340 300" preserveAspectRatio="xMidYMid meet" className="mx-auto">
+      <svg width="100%" height={300} viewBox="0 0 360 300" preserveAspectRatio="xMidYMid meet" className="mx-auto">
         <defs>
           <linearGradient id="radarGrad" x1="0" x2="1">
             <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.9" />
@@ -124,7 +124,7 @@ function RadarChart({ values }) {
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
         <text x={cx} y={35} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Offense</text>
-        <text x={260} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
+        <text x={265} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
         <text x={cx} y={285} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Synergy</text>
         <text x={10} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Cycle</text>
       </svg>
@@ -181,9 +181,18 @@ export default function App() {
 
   const deckScore = useMemo(() => {
     if (filledDeck.length !== 8) return null;
-    const winBonus = winCard ? 1 : 0;
-    const score = Math.round(0.25 * offense + 0.25 * defense + 0.2 * synergy + 0.15 * cycle + 0.15 * (winBonus ? 100 : 40));
-    return clamp(score, 0, 100);
+    
+    const winBonus = winCard ? 25 : 0;
+    
+    const baseScore = Math.round(
+      0.3 * offense + 
+      0.3 * defense + 
+      0.2 * synergy + 
+      0.2 * cycle + 
+      winBonus
+    );
+    
+    return clamp(baseScore, 0, 100);
   }, [offense, defense, synergy, cycle, winCard, filledDeck]);
 
   const getElixirColor = (avgE) => {
