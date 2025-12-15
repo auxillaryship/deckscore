@@ -124,7 +124,7 @@ function RadarChart({ values }) {
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
         <text x={cx} y={35} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Offense</text>
-        <text x={280} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
+        <text x={260} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
         <text x={cx} y={285} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Synergy</text>
         <text x={10} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Cycle</text>
       </svg>
@@ -185,6 +185,14 @@ export default function App() {
     const score = Math.round(0.25 * offense + 0.25 * defense + 0.2 * synergy + 0.15 * cycle + 0.15 * (winBonus ? 100 : 40));
     return clamp(score, 0, 100);
   }, [offense, defense, synergy, cycle, winCard, filledDeck]);
+
+  const getElixirColor = (avgE) => {
+    if (!avgE) return "text-slate-400";
+    if (avgE < 3.0) return "text-green-400";
+    if (avgE < 3.5) return "text-amber-400";
+    if (avgE < 4.0) return "text-orange-400";
+    return "text-red-400";
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -302,18 +310,8 @@ export default function App() {
             <div className="text-5xl font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
               {deckScore !== null ? deckScore : "--"}
             </div>
-          </div>
-
-          <div className="mb-6 p-3 bg-slate-900/50 rounded-lg border border-slate-700 flex items-center justify-center gap-3">
-            <div>
-              <div className="text-xs text-slate-400 font-semibold">Average Elixir</div>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "linear-gradient(135deg, #ff6ad1, #c43be0)" }}>
-                {filledDeck.length ? avg.toFixed(1) : "--"}
-              </div>
-            </div>
-            <div className="flex-1 text-left">
-              <div className="text-xl font-bold text-amber-400">{filledDeck.length ? avg.toFixed(2) : "--"}</div>
-              <div className="text-xs text-slate-500">Cost per troop</div>
+            <div className={`text-sm font-bold mt-1 ${getElixirColor(avg)}`}>
+              Avg Elixir: {filledDeck.length ? avg.toFixed(2) : "--"}
             </div>
           </div>
 
