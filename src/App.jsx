@@ -91,7 +91,7 @@ function ElixirDrop({ value }) {
 function RadarChart({ values }) {
   const axes = ["Offense", "Defense", "Synergy", "Cycle"];
   const vals = [values.offense, values.defense, values.synergy, values.cycle];
-  const cx = 140, cy = 130, r = 60;
+  const cx = 140, cy = 145, r = 60;
   const angle = (i) => Math.PI / 2 - (i * (2 * Math.PI)) / axes.length;
   const points = vals.map((v, i) => {
     const rad = (v / 100) * r;
@@ -123,14 +123,15 @@ function RadarChart({ values }) {
           const y = cy - Math.sin(angle(i)) * rad;
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
-        <text x={cx} y={20} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Offense</text>
-        <text x={290} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
+        <text x={cx} y={40} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Offense</text>
+        <text x={265} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
         <text x={cx} y={275} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Synergy</text>
         <text x={10} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Cycle</text>
       </svg>
     </div>
   );
 }
+
 
 function StatBar({ label, value, accent = "amber" }) {
   const w = `${clamp(value / 100, 0, 1) * 100}%`;
@@ -410,3 +411,4 @@ export default function App() {
     </div>
   );
 }
+
