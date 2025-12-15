@@ -91,7 +91,7 @@ function ElixirDrop({ value }) {
 function RadarChart({ values }) {
   const axes = ["Offense", "Defense", "Synergy", "Cycle"];
   const vals = [values.offense, values.defense, values.synergy, values.cycle];
-  const cx = 110, cy = 110, r = 55;
+  const cx = 140, cy = 130, r = 60;
   const angle = (i) => Math.PI / 2 - (i * (2 * Math.PI)) / axes.length;
   const points = vals.map((v, i) => {
     const rad = (v / 100) * r;
@@ -102,8 +102,8 @@ function RadarChart({ values }) {
   const rings = [0.25, 0.5, 0.75, 1];
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <svg width={280} height={240} viewBox="0 0 280 240" className="mx-auto">
+    <div className="flex flex-col items-center gap-6 px-4">
+      <svg width="100%" height={300} viewBox="0 0 320 280" preserveAspectRatio="xMidYMid meet" className="mx-auto">
         <defs>
           <linearGradient id="radarGrad" x1="0" x2="1">
             <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.9" />
@@ -123,10 +123,10 @@ function RadarChart({ values }) {
           const y = cy - Math.sin(angle(i)) * rad;
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
-        <text x={110} y={18} textAnchor="middle" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Offense</text>
-        <text x={245} y={117} textAnchor="start" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Defense</text>
-        <text x={110} y={232} textAnchor="middle" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Synergy</text>
-        <text x={15} y={117} textAnchor="start" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Cycle</text>
+        <text x={cx} y={20} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Offense</text>
+        <text x={290} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Defense</text>
+        <text x={cx} y={275} textAnchor="middle" className="fill-amber-300 text-base font-bold" pointerEvents="none">Synergy</text>
+        <text x={10} y={cy + 8} textAnchor="start" className="fill-amber-300 text-base font-bold" pointerEvents="none">Cycle</text>
       </svg>
     </div>
   );
