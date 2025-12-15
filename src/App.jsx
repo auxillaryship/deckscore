@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Plus, Trash2, Share2 } from "lucide-react";
 import cards from "./cards.json";
 
-/* ---------- utils ---------- */
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 
 function avgElixir(deck) {
@@ -14,10 +13,7 @@ function avgElixir(deck) {
 
 function sigmaElixir(deck, avg) {
   if (!deck.length) return 0;
-  return Math.sqrt(
-    deck.reduce((s, c) => s + Math.pow((c.elixir || 0) - avg, 2), 0) /
-      deck.length
-  );
+  return Math.sqrt(deck.reduce((s, c) => s + Math.pow((c.elixir || 0) - avg, 2), 0) / deck.length);
 }
 
 function computeSynergy(deck) {
@@ -86,7 +82,7 @@ function computeCycleScore(avgE, sigma) {
 
 function ElixirDrop({ value }) {
   return (
-    <div className="w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold text-white shadow-lg border-2 border-white/20" style={{ background: "linear-gradient(135deg, #ff6ad1, #c43be0)" }}>
+    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white border border-white/20" style={{ background: "linear-gradient(135deg, #ff6ad1, #c43be0)" }}>
       {value ?? "-"}
     </div>
   );
@@ -107,7 +103,7 @@ function RadarChart({ values }) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <svg width={220} height={220} viewBox="0 0 220 220" className="mx-auto">
+      <svg width={240} height={240} viewBox="0 0 240 240" className="mx-auto">
         <defs>
           <linearGradient id="radarGrad" x1="0" x2="1">
             <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.9" />
@@ -127,10 +123,10 @@ function RadarChart({ values }) {
           const y = cy - Math.sin(angle(i)) * rad;
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
-        <text x={cx} y={20} textAnchor="middle" dominantBaseline="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Offense</text>
-        <text x={205} y={cy} dominantBaseline="middle" className="fill-amber-200 text-[11px] font-semibold" pointerEvents="none" textAnchor="start">Defense</text>
-        <text x={cx} y={200} textAnchor="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Synergy</text>
-        <text x={10} y={cy} textAnchor="start" dominantBaseline="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Cycle</text>
+        <text x={120} y={18} textAnchor="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Offense</text>
+        <text x={218} y={115} textAnchor="start" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Defense</text>
+        <text x={120} y={228} textAnchor="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Synergy</text>
+        <text x={12} y={115} textAnchor="end" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Cycle</text>
       </svg>
     </div>
   );
@@ -269,29 +265,29 @@ export default function App() {
 
         <section className="mb-6">
           <div className="text-sm text-slate-400 mb-3 font-semibold">Your Deck ({filledCount}/8)</div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-3">
             {deckSlots.map((c, i) => (
-              <motion.div key={i} onClick={() => toggleSlot(i)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={`relative rounded-xl p-3 flex flex-col justify-between min-h-28 cursor-pointer transition-all ${c ? "bg-gradient-to-br from-amber-600/20 to-amber-900/20 border-2 border-amber-400 shadow-lg hover:shadow-xl hover:border-amber-300" : "bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600"}`}>
+              <div key={i} onClick={() => toggleSlot(i)} className={`relative rounded-lg p-3 flex flex-col justify-between min-h-32 cursor-pointer transition-all ${c ? "bg-gradient-to-br from-amber-600/25 to-amber-900/25 border-2 border-amber-400 shadow-md" : "bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600"}`}>
                 {c ? (
                   <>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-[10px] leading-tight text-white flex-1 line-clamp-2">{c.name}</h3>
+                        <h3 className="font-bold text-sm leading-tight text-white flex-1">{c.name}</h3>
                         <ElixirDrop value={c.elixir} />
                       </div>
-                      <div className="text-[10px] text-slate-300">{c.type}</div>
+                      <div className="text-xs text-slate-300">{c.type}</div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="self-start mt-1 px-2 py-0.5 bg-red-500/80 hover:bg-red-600 text-white text-xs font-semibold rounded transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="self-start mt-1 px-2 py-1 bg-red-500/90 hover:bg-red-600 text-white text-xs font-semibold rounded transition-colors">
                       Remove
                     </button>
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center gap-1">
                     <div className="text-slate-400 text-xs">Empty</div>
-                    <div className="text-cyan-400 font-bold text-xs">Add</div>
+                    <div className="text-cyan-400 font-bold text-sm">+</div>
                   </div>
                 )}
-              </motion.div>
+              </div>
             ))}
           </div>
         </section>
@@ -343,18 +339,31 @@ export default function App() {
             Share Deck
           </button>
           {copied && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-2 text-center text-sm text-green-400 font-semibold">
+            <div className="mt-2 text-center text-sm text-green-400 font-semibold">
               ✓ Link copied to clipboard!
-            </motion.div>
+            </div>
           )}
         </section>
       </div>
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {modalOpen && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="fixed inset-0 bg-black z-40" onClick={() => { setModalOpen(false); setActiveSlot(null); }} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="fixed inset-x-0 bottom-0 top-24 z-50">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.1 }}
+              className="fixed inset-0 bg-black z-40"
+              onClick={() => { setModalOpen(false); setActiveSlot(null); }}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="fixed inset-x-0 bottom-0 top-20 z-50"
+            >
               <div className="max-w-2xl mx-auto h-full bg-gradient-to-b from-slate-900 to-slate-800 rounded-t-3xl shadow-2xl p-6 overflow-hidden flex flex-col border-t-2 border-slate-700">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -378,14 +387,14 @@ export default function App() {
                     filtered.map((c) => {
                       const selected = isSelected(c);
                       return (
-                        <motion.button key={c.id} whileTap={{ scale: 0.98 }} disabled={selected} onClick={() => addCardToSlot(c)} className={`w-full p-4 rounded-lg flex items-center gap-3 text-left transition-all ${selected ? "bg-amber-900/30 border-2 border-amber-400 cursor-default" : "bg-slate-800/60 hover:bg-slate-800 border-2 border-slate-700 hover:border-slate-600"}`}>
+                        <button key={c.id} disabled={selected} onClick={() => addCardToSlot(c)} className={`w-full p-4 rounded-lg flex items-center gap-3 text-left transition-all ${selected ? "bg-amber-900/30 border-2 border-amber-400 cursor-default" : "bg-slate-800/60 hover:bg-slate-800 border-2 border-slate-700 hover:border-slate-600"}`}>
                           <ElixirDrop value={c.elixir} />
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-white">{c.name}</div>
                             <div className="text-xs text-slate-400">{c.type} • {(c.tags || []).slice(0, 2).join(", ")}</div>
                           </div>
                           {selected ? <span className="text-amber-300 font-bold text-sm">✓</span> : <span className="text-slate-400 text-xs font-semibold">Add</span>}
-                        </motion.button>
+                        </button>
                       );
                     })
                   ) : (
