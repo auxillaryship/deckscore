@@ -82,7 +82,7 @@ function computeCycleScore(avgE, sigma) {
 
 function ElixirDrop({ value }) {
   return (
-    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "linear-gradient(135deg, #ff6ad1, #c43be0)" }}>
+    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg" style={{ background: "linear-gradient(135deg, #ff6ad1, #c43be0)" }}>
       {value ?? "-"}
     </div>
   );
@@ -102,8 +102,8 @@ function RadarChart({ values }) {
   const rings = [0.25, 0.5, 0.75, 1];
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <svg width={240} height={240} viewBox="0 0 240 240" className="mx-auto">
+    <div className="flex flex-col items-center gap-6">
+      <svg width={280} height={240} viewBox="0 0 280 240" className="mx-auto">
         <defs>
           <linearGradient id="radarGrad" x1="0" x2="1">
             <stop offset="0%" stopColor="#FFB86B" stopOpacity="0.9" />
@@ -123,10 +123,10 @@ function RadarChart({ values }) {
           const y = cy - Math.sin(angle(i)) * rad;
           return <circle key={i} cx={x} cy={y} r="4" fill="#FF9A55" />;
         })}
-        <text x={120} y={18} textAnchor="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Offense</text>
-        <text x={218} y={115} textAnchor="start" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Defense</text>
-        <text x={120} y={228} textAnchor="middle" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Synergy</text>
-        <text x={12} y={115} textAnchor="end" className="fill-amber-200 text-xs font-semibold" pointerEvents="none">Cycle</text>
+        <text x={110} y={18} textAnchor="middle" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Offense</text>
+        <text x={245} y={117} textAnchor="start" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Defense</text>
+        <text x={110} y={232} textAnchor="middle" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Synergy</text>
+        <text x={15} y={117} textAnchor="start" className="fill-amber-300 text-sm font-bold" pointerEvents="none">Cycle</text>
       </svg>
     </div>
   );
@@ -270,9 +270,9 @@ export default function App() {
               <div key={i} onClick={() => toggleSlot(i)} className={`relative rounded-xl overflow-hidden cursor-pointer transition-all flex flex-col items-center justify-center min-h-40 ${c ? "bg-gradient-to-br from-amber-600/30 to-amber-900/30 border-2 border-amber-400 shadow-lg" : "bg-slate-800/50 border-2 border-slate-700 hover:border-slate-600"}`}>
                 {c ? (
                   <>
-                    <div className="flex flex-col items-center justify-center gap-2 w-full flex-1">
+                    <div className="flex flex-col items-center justify-center gap-2 w-full flex-1 px-2">
+                      <h3 className="font-bold text-xs text-center text-white leading-tight line-clamp-3">{c.name}</h3>
                       <ElixirDrop value={c.elixir} />
-                      <h3 className="font-bold text-xs text-center text-white px-2 leading-tight line-clamp-2">{c.name}</h3>
                     </div>
                     <button onClick={(e) => { e.stopPropagation(); removeAt(i); }} className="w-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2 transition-colors">
                       Remove
